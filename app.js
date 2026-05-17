@@ -20,6 +20,7 @@ app.use('/api/announcements', require('./routes/announcements'));
 app.use('/api/moderation', require('./routes/moderation'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/guide_versions', require('./routes/guide_versions'));
+app.use('/api/member_roles', require('./routes/member_roles'));
 
 
 // Test route
