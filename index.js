@@ -12,6 +12,35 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 // Import Express app
 const app = require('./app');
 
+// Import DB pool for startup checks
+const pool = require('./config/db');
+
+// ============================================
+// STARTUP CHECKS (AUTO-CREATE MODERATOR ROLE)
+// ============================================
+
+async function ensureModeratorRole() {
+    try {
+        const [rows] = await pool.query(
+            'SELECT id FROM roles WHERE name = "Moderator"'
+        );
+
+        if (rows.length === 0) {
+            await pool.query(
+                'INSERT INTO roles (name) VALUES ("Moderator")'
+            );
+            console.log('✔ Moderator role created automatically');
+        } else {
+            console.log('✔ Moderator role already exists');
+        }
+    } catch (error) {
+        console.error('Error ensuring Moderator role:', error);
+    }
+}
+
+// Run the check before server starts
+ensureModeratorRole();
+
 // ============================================
 // SERVER STARTUP
 // ============================================

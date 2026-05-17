@@ -29,4 +29,44 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// CREATE a new role
+router.post('/', async (req, res) => {
+    const { name } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ success: false, message: 'Role name is required' });
+    }
+
+    try {
+        const [result] = await pool.query(
+            'INSERT INTO roles (name) VALUES (?)',
+            [name]
+        );
+
+        res.json({ success: true, id: result.insertId });
+    } catch (error) {
+        console.error('Error creating role:', error);
+        res.status(500).json({ success: false, error: 'Database error' });
+    }
+});
+// DELETE a role
+router.delete('/:id', async (req, res) => {
+    try {
+        const [result] = await pool.query(
+            'DELETE FROM roles WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Role not found' });
+        }
+
+        res.json({ success: true, message: 'Role deleted' });
+    } catch (error) {
+        console.error('Error deleting role:', error);
+        res.status(500).json({ success: false, error: 'Database error' });
+    }
+});
+
+
 module.exports = router;
