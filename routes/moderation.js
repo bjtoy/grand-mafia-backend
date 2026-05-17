@@ -12,37 +12,37 @@ const {
 // PUBLIC / MEMBER-SAFE ROUTES (READ ONLY)
 // ============================================
 
-// GET all announcements (public)
+// GET all moderation logs (public)
 router.get('/', async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT * FROM announcements ORDER BY createdAt DESC'
+            'SELECT * FROM moderation_log ORDER BY createdAt DESC'
         );
-        res.json({ success: true, announcements: rows });
+        res.json({ success: true, logs: rows });
     } catch (error) {
-        console.error('Error fetching announcements:', error);
+        console.error('Error fetching moderation logs:', error);
         res.status(500).json({ success: false, error: 'Database error' });
     }
 });
 
-// GET announcement by ID (public)
+// GET moderation log by ID (public)
 router.get('/:id', async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT * FROM announcements WHERE id = ?',
+            'SELECT * FROM moderation_log WHERE id = ?',
             [req.params.id]
         );
 
         if (rows.length === 0) {
             return res.status(404).json({
                 success: false,
-                message: 'Announcement not found'
+                message: 'Moderation log not found'
             });
         }
 
-        res.json({ success: true, announcement: rows[0] });
+        res.json({ success: true, log: rows[0] });
     } catch (error) {
-        console.error('Error fetching announcement:', error);
+        console.error('Error fetching moderation log:', error);
         res.status(500).json({ success: false, error: 'Database error' });
     }
 });
@@ -51,90 +51,90 @@ router.get('/:id', async (req, res) => {
 // PROTECTED ROUTES (MODERATOR + ADMIN ONLY)
 // ============================================
 
-// CREATE announcement
+// CREATE moderation log entry
 router.post(
     '/',
     requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_ANNOUNCEMENTS'),
+    requirePermission('MANAGE_MODERATION'),
     async (req, res) => {
-        const { title, content, author } = req.body;
+        const { action, targetUser, moderator, details } = req.body;
 
-        if (!title || !content) {
+        if (!action || !targetUser || !moderator) {
             return res.status(400).json({
                 success: false,
-                message: 'Title and content are required'
+                message: 'action, targetUser, and moderator are required'
             });
         }
 
         try {
             const [result] = await pool.query(
-                `INSERT INTO announcements 
-                (title, content, author) 
-                VALUES (?, ?, ?)`,
-                [title, content, author || null]
+                `INSERT INTO moderation_log 
+                (action, targetUser, moderator, details) 
+                VALUES (?, ?, ?, ?)`,
+                [action, targetUser, moderator, details || null]
             );
 
             res.json({ success: true, id: result.insertId });
         } catch (error) {
-            console.error('Error creating announcement:', error);
+            console.error('Error creating moderation log:', error);
             res.status(500).json({ success: false, error: 'Database error' });
         }
     }
 );
 
-// UPDATE announcement
+// UPDATE moderation log entry
 router.put(
     '/:id',
     requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_ANNOUNCEMENTS'),
+    requirePermission('MANAGE_MODERATION'),
     async (req, res) => {
-        const { title, content, author } = req.body;
+        const { action, targetUser, moderator, details } = req.body;
 
         try {
             const [result] = await pool.query(
-                `UPDATE announcements 
-                 SET title = ?, content = ?, author = ?, updatedAt = CURRENT_TIMESTAMP 
+                `UPDATE moderation_log 
+                 SET action = ?, targetUser = ?, moderator = ?, details = ?, updatedAt = CURRENT_TIMESTAMP 
                  WHERE id = ?`,
-                [title, content, author || null, req.params.id]
+                [action, targetUser, moderator, details || null, req.params.id]
             );
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({
                     success: false,
-                    message: 'Announcement not found'
+                    message: 'Moderation log not found'
                 });
             }
 
-            res.json({ success: true, message: 'Announcement updated' });
+            res.json({ success: true, message: 'Moderation log updated' });
         } catch (error) {
-            console.error('Error updating announcement:', error);
+            console.error('Error updating moderation log:', error);
             res.status(500).json({ success: false, error: 'Database error' });
         }
     }
 );
 
-// DELETE announcement
+// DELETE moderation log entry
 router.delete(
     '/:id',
     requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_ANNOUNCEMENTS'),
+    requirePermission('MANAGE_MODERATION'),
     async (req, res) => {
         try {
             const [result] = await pool.query(
-                'DELETE FROM announcements WHERE id = ?',
+                'DELETE FROM moderation_log WHERE id = ?',
                 [req.params.id]
             );
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({
                     success: false,
-                    message: 'Announcement not found'
+                    message: 'Moderation log not found'
                 });
             }
 
-            res.json({ success: true, message: 'Announcement deleted' });
+            res.json({ success: true, message: 'Moderation log deleted' });
         } catch (error) {
-            console.error('Error deleting announcement:', error);
+            console.error('Error deleting moderation log:', error);
             res.status(500).json({ success: false, error: 'Database error' });
         }
     }
