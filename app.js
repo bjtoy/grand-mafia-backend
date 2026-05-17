@@ -11,6 +11,9 @@ app.use(cors({
     credentials: true
 }));
 
+// Routes
+app.use('/api/users', require('./routes/users'));  // ⭐ Added users route
+
 // Test route
 app.get('/api/test', async (req, res) => {
     try {
