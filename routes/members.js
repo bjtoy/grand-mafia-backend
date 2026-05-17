@@ -5,7 +5,7 @@ const pool = require('../config/db');
 // GET all members
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM members ORDER BY created_at DESC');
+        const [rows] = await pool.query('SELECT * FROM members ORDER BY createdAt DESC');
         res.json({ success: true, members: rows });
     } catch (error) {
         console.error('Error fetching members:', error);
