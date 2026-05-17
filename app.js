@@ -15,6 +15,7 @@ app.use(cors({
 app.use('/api/users', require('./routes/users'));  // ⭐ Added users route
 app.use('/api/members', require('./routes/members'));
 app.use('/api/guides', require('./routes/guides'));
+app.use('/api/roles', require('./routes/roles'));
 
 
 // Test route
