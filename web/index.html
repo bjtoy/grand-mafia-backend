@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Grand Mafia Bot — Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">Grand Mafia Bot</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-page="dashboard">
+          <img src="/assets/icons/dashboard.svg" class="nav-icon" />
+          Dashboard
+        </button>
+
+        <button class="nav-item" data-page="members">
+          <img src="/assets/icons/members.svg" class="nav-icon" />
+          Members
+        </button>
+
+        <button class="nav-item" data-page="roles">
+          <img src="/assets/icons/roles.svg" class="nav-icon" />
+          Roles
+        </button>
+
+        <button class="nav-item" data-page="moderation">
+          <img src="/assets/icons/moderation.svg" class="nav-icon" />
+          Moderation
+        </button>
+
+        <button class="nav-item" data-page="announcements">
+          <img src="/assets/icons/announcements.svg" class="nav-icon" />
+          Announcements
+        </button>
+
+        <button class="nav-item" data-page="guides">
+          <img src="/assets/icons/guides.svg" class="nav-icon" />
+          Guides
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item nav-logout" data-action="logout">
+          <img src="/assets/icons/logout.svg" class="nav-icon" />
+          Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="topbar-title">Grand Mafia Dashboard</div>
+
+        <div class="topbar-user">
+          <div class="user-name" id="user-name">Guest</div>
+          <div class="user-avatar">GM</div>
+        </div>
+      </header>
+
+      <!-- PAGE CONTENT -->
+      <main class="content" id="content"></main>
+
+    </div>
+  </div>
+
+  <!-- JS MODULES -->
+  <script src="/js/auth.js"></script>
+  <script src="/js/dashboard.js"></script>
+  <script src="/js/members.js"></script>
+  <script src="/js/roles.js"></script>
+  <script src="/js/moderation.js"></script>
+  <script src="/js/announcements.js"></script>
+  <script src="/js/guides.js"></script>
+  <script src="/js/app.js"></script>
+
+</body>
+</html>

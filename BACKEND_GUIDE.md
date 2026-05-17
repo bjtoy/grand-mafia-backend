@@ -1,0 +1,794 @@
+# Backend Architecture & API Documentation
+
+## Overview
+
+The Grand Mafia Bot backend consists of:
+
+1. **Express.js Server** - REST API and web dashboard
+2. **Discord.js Bot** - Discord bot client
+3. **MySQL Database** - Data persistence
+4. **OAuth2 Authentication** - Discord login
+5. **Session Management** - User authentication
+
+---
+
+## Architecture
+
+```
+grand-mafia-bot/
+├── server/
+│   ├── app.js                 # Express app setup
+│   ├── index.js               # Server entry point
+│   ├── routes/
+│   │   ├── auth.js            # OAuth & authentication
+│   │   ├── api.js             # REST API endpoints
+│   │   └── dashboard.js       # Dashboard routes
+│   ├── middleware/
+│   │   ├── auth.js            # Auth middleware
+│   │   └── errorHandler.js    # Error handling
+│   └── database/
+│       ├── db.js              # Database queries
+│       └── schema.sql         # Database schema
+├── src/
+│   ├── index.js               # Bot entry point
+│   ├── commands/              # Discord commands
+│   ├── events/                # Discord events
+│   └── utils/                 # Utility functions
+└── web/
+    ├── index-enhanced.html    # Dashboard UI
+    ├── styles-enhanced.css    # Dashboard styles
+    └── script-enhanced.js     # Dashboard scripts
+```
+
+---
+
+## Server Setup
+
+### Installation
+
+```bash
+npm install
+```
+
+### Environment Variables
+
+Create `.env` file:
+
+```env
+# Server
+NODE_ENV=development
+PORT=3000
+HOST=localhost
+
+# Database
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=grand_mafia_bot
+
+# Discord OAuth
+DISCORD_CLIENT_ID=your_client_id
+DISCORD_CLIENT_SECRET=your_client_secret
+DISCORD_REDIRECT_URI=http://localhost:3000/api/auth/callback
+
+# JWT
+JWT_SECRET=your_jwt_secret
+SESSION_SECRET=your_session_secret
+
+# Admin
+ADMIN_ID=your_discord_id
+MODERATOR_IDS=id1,id2,id3
+
+# Frontend
+FRONTEND_URL=http://localhost:3000
+```
+
+### Database Setup
+
+```bash
+# Create database
+mysql -u root -p < server/database/schema.sql
+
+# Or manually:
+mysql -u root -p
+> CREATE DATABASE grand_mafia_bot;
+> USE grand_mafia_bot;
+> SOURCE server/database/schema.sql;
+```
+
+### Start Server
+
+```bash
+# Development
+npm run server:dev
+
+# Production
+npm run server
+```
+
+---
+
+## API Endpoints
+
+### Authentication
+
+#### Login
+```
+GET /api/auth/login
+```
+Redirects to Discord OAuth
+
+#### Callback
+```
+GET /api/auth/callback?code=...&state=...
+```
+Handles OAuth callback
+
+#### Get Current User
+```
+GET /api/auth/me
+```
+Returns current authenticated user
+
+#### Logout
+```
+POST /api/auth/logout
+```
+Logs out current user
+
+#### Refresh Token
+```
+POST /api/auth/refresh
+```
+Refreshes authentication token
+
+#### Get User Guilds
+```
+GET /api/auth/guilds
+```
+Returns user's Discord guilds
+
+---
+
+### Dashboard API
+
+#### Overview
+```
+GET /api/dashboard/overview
+```
+Returns dashboard statistics and recent activity
+
+**Response:**
+```json
+{
+  "stats": {
+    "totalMembers": 1234,
+    "totalGuides": 42,
+    "totalModerations": 18,
+    "totalMessages": 5678,
+    "botUptime": 123456,
+    "lastUpdate": "2024-01-15T10:30:00Z"
+  },
+  "recentMembers": [...],
+  "recentGuides": [...],
+  "recentAnnouncements": [...],
+  "moderationLog": [...]
+}
+```
+
+---
+
+### Members API
+
+#### Get All Members
+```
+GET /api/dashboard/members
+```
+
+#### Get Member by ID
+```
+GET /api/dashboard/members/:id
+```
+
+#### Update Member
+```
+PUT /api/dashboard/members/:id
+```
+
+**Body:**
+```json
+{
+  "role": "enforcer",
+  "notes": "Member notes",
+  "warnings": 1
+}
+```
+
+#### Assign Role to Member
+```
+POST /api/dashboard/members/:id/roles/:roleId
+```
+
+#### Remove Role from Member
+```
+DELETE /api/dashboard/members/:id/roles/:roleId
+```
+
+---
+
+### Moderation API
+
+#### Get Moderation Log
+```
+GET /api/dashboard/moderation/log
+```
+
+#### Kick Member
+```
+POST /api/dashboard/moderation/kick
+```
+
+**Body:**
+```json
+{
+  "targetUser": "username",
+  "reason": "Reason for kick"
+}
+```
+
+#### Ban Member
+```
+POST /api/dashboard/moderation/ban
+```
+
+**Body:**
+```json
+{
+  "targetUser": "username",
+  "reason": "Reason for ban",
+  "duration": 86400
+}
+```
+
+#### Mute Member
+```
+POST /api/dashboard/moderation/mute
+```
+
+**Body:**
+```json
+{
+  "targetUser": "username",
+  "reason": "Reason for mute",
+  "duration": 3600
+}
+```
+
+#### Warn Member
+```
+POST /api/dashboard/moderation/warn
+```
+
+**Body:**
+```json
+{
+  "targetUser": "username",
+  "reason": "Reason for warning"
+}
+```
+
+---
+
+### Guides API
+
+#### Get All Guides
+```
+GET /api/dashboard/guides?category=strategy&search=raid
+```
+
+#### Create Guide
+```
+POST /api/dashboard/guides
+```
+
+**Body:**
+```json
+{
+  "title": "Raiding Strategy",
+  "category": "strategy",
+  "content": "Guide content here...",
+  "style": "formatted"
+}
+```
+
+#### Update Guide
+```
+PUT /api/dashboard/guides/:id
+```
+
+#### Delete Guide
+```
+DELETE /api/dashboard/guides/:id
+```
+
+---
+
+### Announcements API
+
+#### Get All Announcements
+```
+GET /api/dashboard/announcements
+```
+
+#### Create Announcement
+```
+POST /api/dashboard/announcements
+```
+
+**Body:**
+```json
+{
+  "title": "Server Maintenance",
+  "message": "Server will be down for maintenance...",
+  "channel": "announcements",
+  "color": "#FF6B6B"
+}
+```
+
+#### Delete Announcement
+```
+DELETE /api/dashboard/announcements/:id
+```
+
+---
+
+### Roles API
+
+#### Get All Roles
+```
+GET /api/dashboard/roles
+```
+
+#### Create Role
+```
+POST /api/dashboard/roles
+```
+
+**Body:**
+```json
+{
+  "name": "Enforcer",
+  "color": "#FF6B6B",
+  "permissions": ["kick", "ban", "mute"]
+}
+```
+
+#### Update Role
+```
+PUT /api/dashboard/roles/:id
+```
+
+#### Delete Role
+```
+DELETE /api/dashboard/roles/:id
+```
+
+---
+
+### Channel Permissions API
+
+#### Get Channel Permissions
+```
+GET /api/dashboard/channels/:channelId/permissions
+```
+
+#### Set Channel Permission
+```
+POST /api/dashboard/channels/:channelId/permissions/:roleId
+```
+
+**Body:**
+```json
+{
+  "canView": true,
+  "canSend": true,
+  "canManage": false,
+  "canDelete": false
+}
+```
+
+---
+
+### Settings API
+
+#### Get Settings
+```
+GET /api/dashboard/settings
+```
+
+#### Update Settings
+```
+PUT /api/dashboard/settings
+```
+
+**Body:**
+```json
+{
+  "server_name": "Grand Mafia",
+  "bot_prefix": "!",
+  "enable_auto_moderation": true
+}
+```
+
+---
+
+## Database Schema
+
+### Users Table
+```sql
+CREATE TABLE users (
+  id VARCHAR(255) PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  email VARCHAR(255),
+  avatar VARCHAR(255),
+  discriminator VARCHAR(10),
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+### Members Table
+```sql
+CREATE TABLE members (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  discordId VARCHAR(255) NOT NULL UNIQUE,
+  username VARCHAR(255) NOT NULL,
+  email VARCHAR(255),
+  avatar VARCHAR(255),
+  role VARCHAR(100) DEFAULT 'member',
+  joinedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  lastSeen TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  notes TEXT,
+  warnings INT DEFAULT 0,
+  muted BOOLEAN DEFAULT FALSE,
+  banned BOOLEAN DEFAULT FALSE,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+### Guides Table
+```sql
+CREATE TABLE guides (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  category VARCHAR(100) NOT NULL,
+  content LONGTEXT NOT NULL,
+  style VARCHAR(50) DEFAULT 'formatted',
+  author VARCHAR(255) NOT NULL,
+  views INT DEFAULT 0,
+  likes INT DEFAULT 0,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  publishedAt TIMESTAMP
+);
+```
+
+### Moderation Log Table
+```sql
+CREATE TABLE moderation_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  action VARCHAR(50) NOT NULL,
+  targetUser VARCHAR(255) NOT NULL,
+  targetUserId INT,
+  moderator VARCHAR(255) NOT NULL,
+  moderatorId INT,
+  reason TEXT,
+  duration INT,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+See `server/database/schema.sql` for complete schema.
+
+---
+
+## Authentication Flow
+
+### OAuth2 Flow
+
+1. User clicks "Login with Discord"
+2. Redirected to Discord OAuth page
+3. User authorizes the application
+4. Discord redirects to `/api/auth/callback` with authorization code
+5. Server exchanges code for access token
+6. Server fetches user info and guilds
+7. Server creates JWT token and sets session
+8. User is logged in and redirected to dashboard
+
+### Session Management
+
+- Sessions stored in memory (can be changed to Redis/database)
+- JWT tokens stored in secure HTTP-only cookies
+- Token expires after 24 hours
+- Refresh token available for extending session
+
+---
+
+## Middleware
+
+### Authentication Middleware
+```javascript
+authMiddleware(req, res, next)
+```
+Checks if user is authenticated via session or JWT token
+
+### Admin Middleware
+```javascript
+adminMiddleware(req, res, next)
+```
+Checks if user is admin
+
+### Moderator Middleware
+```javascript
+moderatorMiddleware(req, res, next)
+```
+Checks if user is moderator or admin
+
+### Rate Limiting
+```javascript
+limiter
+```
+Limits requests to 100 per 15 minutes
+
+### Error Handler
+```javascript
+errorHandler(err, req, res, next)
+```
+Handles all errors and returns appropriate responses
+
+---
+
+## Database Queries
+
+### Get Members
+```javascript
+const members = await db.getMembers();
+```
+
+### Get Member by ID
+```javascript
+const member = await db.getMemberById(id);
+```
+
+### Create Member
+```javascript
+const member = await db.createMember({
+  discordId: '123456789',
+  username: 'player123',
+  email: 'player@example.com',
+  avatar: 'avatar_url',
+  role: 'member'
+});
+```
+
+### Update Member
+```javascript
+const member = await db.updateMember(id, {
+  role: 'enforcer',
+  notes: 'Updated notes'
+});
+```
+
+### Get Guides
+```javascript
+const guides = await db.getGuides({
+  category: 'strategy',
+  search: 'raid'
+});
+```
+
+### Create Guide
+```javascript
+const guide = await db.createGuide({
+  title: 'Raiding Strategy',
+  category: 'strategy',
+  content: 'Guide content...',
+  style: 'formatted',
+  author: 'admin'
+});
+```
+
+---
+
+## Error Handling
+
+### Error Response Format
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Error message",
+    "statusCode": 400,
+    "stack": "Error stack trace (development only)"
+  }
+}
+```
+
+### Common Error Codes
+
+| Code | Message |
+|------|---------|
+| 400 | Bad Request |
+| 401 | Unauthorized |
+| 403 | Forbidden |
+| 404 | Not Found |
+| 500 | Internal Server Error |
+
+---
+
+## Security
+
+### Best Practices
+
+1. **Environment Variables** - Never commit `.env` file
+2. **HTTPS** - Always use HTTPS in production
+3. **CORS** - Configure CORS properly
+4. **Rate Limiting** - Prevent brute force attacks
+5. **Input Validation** - Validate all user inputs
+6. **SQL Injection** - Use parameterized queries
+7. **XSS Protection** - Sanitize user inputs
+8. **CSRF Protection** - Use CSRF tokens
+
+### Security Headers
+
+The server uses Helmet.js to set security headers:
+- X-Content-Type-Options
+- X-Frame-Options
+- X-XSS-Protection
+- Strict-Transport-Security
+- Content-Security-Policy
+
+---
+
+## Deployment
+
+### Production Checklist
+
+- [ ] Set `NODE_ENV=production`
+- [ ] Use strong JWT and session secrets
+- [ ] Enable HTTPS
+- [ ] Configure proper CORS origins
+- [ ] Use environment variables for all secrets
+- [ ] Set up database backups
+- [ ] Enable rate limiting
+- [ ] Monitor error logs
+- [ ] Set up SSL certificates
+- [ ] Configure firewall rules
+
+### Deployment Platforms
+
+- **Heroku** - `git push heroku main`
+- **Railway** - Connect GitHub repository
+- **Render** - Connect GitHub repository
+- **AWS** - Deploy to EC2 or ECS
+- **DigitalOcean** - Deploy to Droplet or App Platform
+
+---
+
+## Troubleshooting
+
+### Server Won't Start
+
+**Problem:** Port already in use
+
+**Solution:**
+```bash
+# Find process using port
+lsof -i :3000
+
+# Kill process
+kill -9 <PID>
+```
+
+### Database Connection Error
+
+**Problem:** Can't connect to MySQL
+
+**Solution:**
+```bash
+# Check MySQL is running
+sudo service mysql status
+
+# Start MySQL
+sudo service mysql start
+
+# Check credentials in .env
+```
+
+### OAuth Error
+
+**Problem:** OAuth callback fails
+
+**Solution:**
+- Verify Discord Client ID and Secret
+- Check redirect URI matches in Discord settings
+- Ensure FRONTEND_URL is correct
+
+### Session Issues
+
+**Problem:** User logs out unexpectedly
+
+**Solution:**
+- Check session secret is set
+- Verify session cookie settings
+- Check database connection
+
+---
+
+## Performance Optimization
+
+### Database Optimization
+
+```javascript
+// Add indexes
+CREATE INDEX idx_username ON members(username);
+CREATE INDEX idx_role ON members(role);
+CREATE INDEX idx_category ON guides(category);
+```
+
+### Caching
+
+```javascript
+const NodeCache = require('node-cache');
+const cache = new NodeCache({ stdTTL: 600 });
+
+// Cache frequently accessed data
+cache.set('roles', roles);
+const cachedRoles = cache.get('roles');
+```
+
+### Connection Pooling
+
+```javascript
+const pool = mysql.createPool({
+  connectionLimit: 10,
+  queueLimit: 0
+});
+```
+
+---
+
+## Monitoring
+
+### Logging
+
+```javascript
+// Use morgan for HTTP logging
+app.use(morgan('combined'));
+
+// Log errors
+console.error('Error:', error);
+```
+
+### Health Checks
+
+```
+GET /health
+```
+
+Returns server status
+
+---
+
+## Support
+
+For issues or questions, refer to:
+- Main README.md
+- API documentation
+- Discord.js documentation
+- Express.js documentation
+
+---
+
+**Happy building!** 🚀
