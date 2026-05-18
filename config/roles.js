@@ -1,10 +1,10 @@
-{
-  "Admin": {
-    "permissions": ["*"]
+module.exports = {
+  Admin: {
+    permissions: ["*"]
   },
 
-  "Mod": {
-    "permissions": [
+  Mod: {
+    permissions: [
       "MUTE_MEMBERS",
       "WARN_MEMBERS",
       "DELETE_MESSAGES",
@@ -27,23 +27,23 @@
     ]
   },
 
-  "Enforcer": {
-    "permissions": [
+  Enforcer: {
+    permissions: [
       "READ_CONTENT",
       "WRITE_CONTENT"
     ]
   },
 
-  "Scout": {
-    "permissions": [
+  Scout: {
+    permissions: [
       "READ_CONTENT",
       "WRITE_CONTENT"
     ]
   },
 
-  "Member": {
-    "permissions": [
+  Member: {
+    permissions: [
       "READ_CONTENT"
     ]
   }
-}
+};
