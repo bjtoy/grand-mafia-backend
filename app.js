@@ -1,6 +1,13 @@
+// ============================================
+// EXPRESS APP (SECTION D REBUILD)
+// ============================================
+
 const express = require('express');
 const cors = require('cors');
-const pool = require('./config/db'); // MySQL connection
+const cookieParser = require('cookie-parser');
+
+// DB
+const pool = require('./config/db');
 
 // Auth + Permission middleware
 const {
@@ -9,7 +16,7 @@ const {
     requireRole,
     requireAnyRole,
     limiter
-} = require('./auth-middleware');
+} = require('./middleware/auth-middleware');
 
 const app = express();
 
@@ -18,6 +25,8 @@ const app = express();
 // ============================================
 
 app.use(express.json());
+app.use(cookieParser());
+
 app.use(
     cors({
         origin: process.env.FRONTEND_URL,
@@ -62,23 +71,23 @@ app.use(
 // MEMBERS (Moderator or Admin)
 app.use(
     '/api/members',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_MEMBERS'),
     require('./routes/members')
 );
 
-// GUIDES (Moderator/Admin for now — we can split read/write later)
+// GUIDES (Moderator/Admin)
 app.use(
     '/api/guides',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_GUIDES'),
     require('./routes/guides')
 );
 
-// ROLES (Admin + Moderator) — UPDATED AS REQUESTED
+// ROLES (Admin + Mod)
 app.use(
     '/api/roles',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_ROLES'),
     require('./routes/roles')
 );
@@ -86,7 +95,7 @@ app.use(
 // ANNOUNCEMENTS (Moderator/Admin)
 app.use(
     '/api/announcements',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_ANNOUNCEMENTS'),
     require('./routes/announcements')
 );
@@ -94,7 +103,7 @@ app.use(
 // MODERATION (Moderator/Admin)
 app.use(
     '/api/moderation',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_MODERATION'),
     require('./routes/moderation')
 );
@@ -110,15 +119,15 @@ app.use(
 // GUIDE VERSIONS (Moderator/Admin)
 app.use(
     '/api/guide_versions',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_GUIDES'),
     require('./routes/guide_versions')
 );
 
-// MEMBER ROLES (Admin + Moderator)
+// MEMBER ROLES (Admin + Mod)
 app.use(
     '/api/member_roles',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_ROLES'),
     require('./routes/member_roles')
 );

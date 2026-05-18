@@ -6,17 +6,28 @@ const pool = require('../config/db');
 const {
     requireAnyRole,
     requirePermission
-} = require('../auth-middleware');
+} = require('../middleware/auth-middleware');
 
 // ============================================
-// PUBLIC / MEMBER-SAFE ROUTES (READ ONLY)
+// PUBLIC / READ-ONLY ROUTES
+// Members are synced automatically by the
+// Role Sync Engine. Manual edits are restricted.
 // ============================================
 
 // GET ALL MEMBERS (public)
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM members ORDER BY id DESC');
-        res.json({ success: true, members: rows });
+        const [rows] = await pool.query(`
+            SELECT *
+            FROM members
+            ORDER BY id DESC
+        `);
+
+        res.json({
+            success: true,
+            members: rows
+        });
+
     } catch (error) {
         console.error('Error fetching members:', error);
         res.status(500).json({ success: false, error: 'Database error' });
@@ -32,10 +43,17 @@ router.get('/:id', async (req, res) => {
         );
 
         if (rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Member not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'Member not found'
+            });
         }
 
-        res.json({ success: true, member: rows[0] });
+        res.json({
+            success: true,
+            member: rows[0]
+        });
+
     } catch (error) {
         console.error('Error fetching member:', error);
         res.status(500).json({ success: false, error: 'Database error' });
@@ -43,87 +61,47 @@ router.get('/:id', async (req, res) => {
 });
 
 // ============================================
-// PROTECTED ROUTES (MODERATOR + ADMIN ONLY)
+// PROTECTED ROUTES (DISABLED IN SECTION D)
+// Member creation, updates, and deletion are
+// handled automatically by the Role Sync Engine.
 // ============================================
 
-// CREATE MEMBER
+// CREATE MEMBER (DISABLED)
 router.post(
     '/',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_MEMBERS'),
-    async (req, res) => {
-        const { username, discordId } = req.body;
-
-        if (!username || !discordId) {
-            return res.status(400).json({
-                success: false,
-                message: 'username and discordId are required'
-            });
-        }
-
-        try {
-            const [result] = await pool.query(
-                'INSERT INTO members (username, discordId) VALUES (?, ?)',
-                [username, discordId]
-            );
-
-            res.json({ success: true, id: result.insertId });
-        } catch (error) {
-            console.error('Error creating member:', error);
-            res.status(500).json({ success: false, error: 'Database error' });
-        }
+    (req, res) => {
+        return res.status(403).json({
+            success: false,
+            message: 'Members cannot be created manually. They are created automatically when they join the server or log in.'
+        });
     }
 );
 
-// UPDATE MEMBER
+// UPDATE MEMBER (DISABLED)
 router.put(
     '/:id',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_MEMBERS'),
-    async (req, res) => {
-        const { username, discordId } = req.body;
-
-        try {
-            const [result] = await pool.query(
-                `UPDATE members 
-                 SET username = ?, discordId = ?, updatedAt = CURRENT_TIMESTAMP
-                 WHERE id = ?`,
-                [username, discordId, req.params.id]
-            );
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ success: false, message: 'Member not found' });
-            }
-
-            res.json({ success: true, message: 'Member updated' });
-        } catch (error) {
-            console.error('Error updating member:', error);
-            res.status(500).json({ success: false, error: 'Database error' });
-        }
+    (req, res) => {
+        return res.status(403).json({
+            success: false,
+            message: 'Members cannot be updated manually. Their data is synced automatically from Discord.'
+        });
     }
 );
 
-// DELETE MEMBER
+// DELETE MEMBER (DISABLED)
 router.delete(
     '/:id',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_MEMBERS'),
-    async (req, res) => {
-        try {
-            const [result] = await pool.query(
-                'DELETE FROM members WHERE id = ?',
-                [req.params.id]
-            );
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ success: false, message: 'Member not found' });
-            }
-
-            res.json({ success: true, message: 'Member deleted' });
-        } catch (error) {
-            console.error('Error deleting member:', error);
-            res.status(500).json({ success: false, error: 'Database error' });
-        }
+    (req, res) => {
+        return res.status(403).json({
+            success: false,
+            message: 'Members cannot be deleted manually. They are managed automatically by the Role Sync Engine.'
+        });
     }
 );
 

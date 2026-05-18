@@ -6,41 +6,37 @@ const pool = require('../config/db');
 const {
     requireAnyRole,
     requirePermission
-} = require('../auth-middleware');
+} = require('../middleware/auth-middleware');
 
 // ============================================
-// PUBLIC / MEMBER-SAFE ROUTES (READ ONLY)
+// PUBLIC ROUTES — READ ONLY
 // ============================================
 
-// GET all guide versions (public)
-router.get('/', async (req, res) => {
+// GET ALL VERSIONS FOR A GUIDE (public)
+router.get('/guide/:guideId', async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT * FROM guide_versions ORDER BY createdAt DESC'
+            `
+            SELECT *
+            FROM guide_versions
+            WHERE guideId = ?
+            ORDER BY createdAt DESC
+            `,
+            [req.params.guideId]
         );
-        res.json({ success: true, versions: rows });
+
+        res.json({
+            success: true,
+            versions: rows
+        });
+
     } catch (error) {
         console.error('Error fetching guide versions:', error);
         res.status(500).json({ success: false, error: 'Database error' });
     }
 });
 
-// GET all versions for a specific guide (public)
-router.get('/guide/:guideId', async (req, res) => {
-    try {
-        const [rows] = await pool.query(
-            'SELECT * FROM guide_versions WHERE guideId = ? ORDER BY createdAt DESC',
-            [req.params.guideId]
-        );
-
-        res.json({ success: true, versions: rows });
-    } catch (error) {
-        console.error('Error fetching guide versions by guideId:', error);
-        res.status(500).json({ success: false, error: 'Database error' });
-    }
-});
-
-// GET a single version by ID (public)
+// GET SPECIFIC VERSION (public)
 router.get('/:id', async (req, res) => {
     try {
         const [rows] = await pool.query(
@@ -55,7 +51,11 @@ router.get('/:id', async (req, res) => {
             });
         }
 
-        res.json({ success: true, version: rows[0] });
+        res.json({
+            success: true,
+            version: rows[0]
+        });
+
     } catch (error) {
         console.error('Error fetching guide version:', error);
         res.status(500).json({ success: false, error: 'Database error' });
@@ -63,16 +63,16 @@ router.get('/:id', async (req, res) => {
 });
 
 // ============================================
-// PROTECTED ROUTES (MODERATOR + ADMIN ONLY)
+// PROTECTED ROUTES — MOD + ADMIN
 // ============================================
 
-// CREATE a new guide version
+// CREATE NEW VERSION
 router.post(
     '/',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_GUIDES'),
     async (req, res) => {
-        const { guideId, title, content, author } = req.body;
+        const { guideId, title, content } = req.body;
 
         if (!guideId || !title || !content) {
             return res.status(400).json({
@@ -83,13 +83,18 @@ router.post(
 
         try {
             const [result] = await pool.query(
-                `INSERT INTO guide_versions 
-                (guideId, title, content, author) 
-                VALUES (?, ?, ?, ?)`,
-                [guideId, title, content, author || null]
+                `
+                INSERT INTO guide_versions (guideId, title, content)
+                VALUES (?, ?, ?)
+                `,
+                [guideId, title, content]
             );
 
-            res.json({ success: true, id: result.insertId });
+            res.json({
+                success: true,
+                id: result.insertId
+            });
+
         } catch (error) {
             console.error('Error creating guide version:', error);
             res.status(500).json({ success: false, error: 'Database error' });
@@ -97,20 +102,22 @@ router.post(
     }
 );
 
-// UPDATE a guide version
+// UPDATE VERSION
 router.put(
     '/:id',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_GUIDES'),
     async (req, res) => {
-        const { title, content, author } = req.body;
+        const { title, content } = req.body;
 
         try {
             const [result] = await pool.query(
-                `UPDATE guide_versions 
-                 SET title = ?, content = ?, author = ?, updatedAt = CURRENT_TIMESTAMP 
-                 WHERE id = ?`,
-                [title, content, author || null, req.params.id]
+                `
+                UPDATE guide_versions
+                SET title = ?, content = ?, updatedAt = CURRENT_TIMESTAMP
+                WHERE id = ?
+                `,
+                [title, content, req.params.id]
             );
 
             if (result.affectedRows === 0) {
@@ -120,7 +127,11 @@ router.put(
                 });
             }
 
-            res.json({ success: true, message: 'Guide version updated' });
+            res.json({
+                success: true,
+                message: 'Guide version updated'
+            });
+
         } catch (error) {
             console.error('Error updating guide version:', error);
             res.status(500).json({ success: false, error: 'Database error' });
@@ -128,10 +139,10 @@ router.put(
     }
 );
 
-// DELETE a guide version
+// DELETE VERSION
 router.delete(
     '/:id',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_GUIDES'),
     async (req, res) => {
         try {
@@ -147,7 +158,11 @@ router.delete(
                 });
             }
 
-            res.json({ success: true, message: 'Guide version deleted' });
+            res.json({
+                success: true,
+                message: 'Guide version deleted'
+            });
+
         } catch (error) {
             console.error('Error deleting guide version:', error);
             res.status(500).json({ success: false, error: 'Database error' });

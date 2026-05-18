@@ -6,135 +6,140 @@ const pool = require('../config/db');
 const {
     requireAnyRole,
     requirePermission
-} = require('../auth-middleware');
+} = require('../middleware/auth-middleware');
 
 // ============================================
-// PUBLIC / MEMBER-SAFE ROUTES (READ ONLY)
+// MODERATION ROUTES (MOD + ADMIN ONLY)
 // ============================================
 
-// GET all moderation logs (public)
-router.get('/', async (req, res) => {
-    try {
-        const [rows] = await pool.query(
-            'SELECT * FROM moderation_log ORDER BY createdAt DESC'
-        );
-        res.json({ success: true, logs: rows });
-    } catch (error) {
-        console.error('Error fetching moderation logs:', error);
-        res.status(500).json({ success: false, error: 'Database error' });
-    }
-});
-
-// GET moderation log by ID (public)
-router.get('/:id', async (req, res) => {
-    try {
-        const [rows] = await pool.query(
-            'SELECT * FROM moderation_log WHERE id = ?',
-            [req.params.id]
-        );
-
-        if (rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Moderation log not found'
-            });
-        }
-
-        res.json({ success: true, log: rows[0] });
-    } catch (error) {
-        console.error('Error fetching moderation log:', error);
-        res.status(500).json({ success: false, error: 'Database error' });
-    }
-});
-
-// ============================================
-// PROTECTED ROUTES (MODERATOR + ADMIN ONLY)
-// ============================================
-
-// CREATE moderation log entry
+// WARN MEMBER
 router.post(
-    '/',
-    requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_MODERATION'),
+    '/warn',
+    requireAnyRole(['Admin', 'Mod']),
+    requirePermission('WARN_MEMBERS'),
     async (req, res) => {
-        const { action, targetUser, moderator, details } = req.body;
+        const { memberId, reason } = req.body;
 
-        if (!action || !targetUser || !moderator) {
+        if (!memberId || !reason) {
             return res.status(400).json({
                 success: false,
-                message: 'action, targetUser, and moderator are required'
+                message: 'memberId and reason are required'
             });
         }
 
         try {
-            const [result] = await pool.query(
-                `INSERT INTO moderation_log 
-                (action, targetUser, moderator, details) 
-                VALUES (?, ?, ?, ?)`,
-                [action, targetUser, moderator, details || null]
+            await pool.query(
+                `
+                INSERT INTO moderation_logs (memberId, action, reason)
+                VALUES (?, 'WARN', ?)
+                `,
+                [memberId, reason]
             );
 
-            res.json({ success: true, id: result.insertId });
+            res.json({
+                success: true,
+                message: 'Member warned'
+            });
+
         } catch (error) {
-            console.error('Error creating moderation log:', error);
+            console.error('Error warning member:', error);
             res.status(500).json({ success: false, error: 'Database error' });
         }
     }
 );
 
-// UPDATE moderation log entry
-router.put(
-    '/:id',
-    requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_MODERATION'),
+// MUTE MEMBER
+router.post(
+    '/mute',
+    requireAnyRole(['Admin', 'Mod']),
+    requirePermission('MUTE_MEMBERS'),
     async (req, res) => {
-        const { action, targetUser, moderator, details } = req.body;
+        const { memberId, duration, reason } = req.body;
+
+        if (!memberId || !duration || !reason) {
+            return res.status(400).json({
+                success: false,
+                message: 'memberId, duration, and reason are required'
+            });
+        }
 
         try {
-            const [result] = await pool.query(
-                `UPDATE moderation_log 
-                 SET action = ?, targetUser = ?, moderator = ?, details = ?, updatedAt = CURRENT_TIMESTAMP 
-                 WHERE id = ?`,
-                [action, targetUser, moderator, details || null, req.params.id]
+            await pool.query(
+                `
+                INSERT INTO moderation_logs (memberId, action, duration, reason)
+                VALUES (?, 'MUTE', ?, ?)
+                `,
+                [memberId, duration, reason]
             );
 
-            if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Moderation log not found'
-                });
-            }
+            res.json({
+                success: true,
+                message: 'Member muted'
+            });
 
-            res.json({ success: true, message: 'Moderation log updated' });
         } catch (error) {
-            console.error('Error updating moderation log:', error);
+            console.error('Error muting member:', error);
             res.status(500).json({ success: false, error: 'Database error' });
         }
     }
 );
 
-// DELETE moderation log entry
-router.delete(
-    '/:id',
-    requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_MODERATION'),
+// DELETE MESSAGE (log only — bot handles actual deletion)
+router.post(
+    '/delete-message',
+    requireAnyRole(['Admin', 'Mod']),
+    requirePermission('DELETE_MESSAGES'),
     async (req, res) => {
+        const { messageId, channelId, reason } = req.body;
+
+        if (!messageId || !channelId) {
+            return res.status(400).json({
+                success: false,
+                message: 'messageId and channelId are required'
+            });
+        }
+
         try {
-            const [result] = await pool.query(
-                'DELETE FROM moderation_log WHERE id = ?',
-                [req.params.id]
+            await pool.query(
+                `
+                INSERT INTO moderation_logs (action, messageId, channelId, reason)
+                VALUES ('DELETE_MESSAGE', ?, ?, ?)
+                `,
+                [messageId, channelId, reason || null]
             );
 
-            if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Moderation log not found'
-                });
-            }
+            res.json({
+                success: true,
+                message: 'Message deletion logged'
+            });
 
-            res.json({ success: true, message: 'Moderation log deleted' });
         } catch (error) {
-            console.error('Error deleting moderation log:', error);
+            console.error('Error logging message deletion:', error);
+            res.status(500).json({ success: false, error: 'Database error' });
+        }
+    }
+);
+
+// GET MODERATION LOGS (Mod + Admin)
+router.get(
+    '/logs',
+    requireAnyRole(['Admin', 'Mod']),
+    requirePermission('VIEW_AUDIT_LOG'),
+    async (req, res) => {
+        try {
+            const [rows] = await pool.query(`
+                SELECT *
+                FROM moderation_logs
+                ORDER BY createdAt DESC
+            `);
+
+            res.json({
+                success: true,
+                logs: rows
+            });
+
+        } catch (error) {
+            console.error('Error fetching moderation logs:', error);
             res.status(500).json({ success: false, error: 'Database error' });
         }
     }

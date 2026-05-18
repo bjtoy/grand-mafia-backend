@@ -6,26 +6,33 @@ const pool = require('../config/db');
 const {
     requireAnyRole,
     requirePermission
-} = require('../auth-middleware');
+} = require('../middleware/auth-middleware');
 
 // ============================================
-// PUBLIC / MEMBER-SAFE ROUTES (READ ONLY)
+// PUBLIC ROUTES — READ ONLY
 // ============================================
 
-// GET all announcements (public)
+// GET ALL ANNOUNCEMENTS (public)
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM announcements ORDER BY createdAt DESC'
-        );
-        res.json({ success: true, announcements: rows });
+        const [rows] = await pool.query(`
+            SELECT *
+            FROM announcements
+            ORDER BY createdAt DESC
+        `);
+
+        res.json({
+            success: true,
+            announcements: rows
+        });
+
     } catch (error) {
         console.error('Error fetching announcements:', error);
         res.status(500).json({ success: false, error: 'Database error' });
     }
 });
 
-// GET announcement by ID (public)
+// GET ANNOUNCEMENT BY ID (public)
 router.get('/:id', async (req, res) => {
     try {
         const [rows] = await pool.query(
@@ -40,7 +47,11 @@ router.get('/:id', async (req, res) => {
             });
         }
 
-        res.json({ success: true, announcement: rows[0] });
+        res.json({
+            success: true,
+            announcement: rows[0]
+        });
+
     } catch (error) {
         console.error('Error fetching announcement:', error);
         res.status(500).json({ success: false, error: 'Database error' });
@@ -48,33 +59,38 @@ router.get('/:id', async (req, res) => {
 });
 
 // ============================================
-// PROTECTED ROUTES (MODERATOR + ADMIN ONLY)
+// PROTECTED ROUTES — MOD + ADMIN
 // ============================================
 
-// CREATE announcement
+// CREATE ANNOUNCEMENT
 router.post(
     '/',
-    requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_ANNOUNCEMENTS'),
+    requireAnyRole(['Admin', 'Mod']),
+    requirePermission('CREATE_ANNOUNCEMENT'),
     async (req, res) => {
-        const { title, content, author } = req.body;
+        const { title, content } = req.body;
 
         if (!title || !content) {
             return res.status(400).json({
                 success: false,
-                message: 'Title and content are required'
+                message: 'title and content are required'
             });
         }
 
         try {
             const [result] = await pool.query(
-                `INSERT INTO announcements 
-                (title, content, author) 
-                VALUES (?, ?, ?)`,
-                [title, content, author || null]
+                `
+                INSERT INTO announcements (title, content)
+                VALUES (?, ?)
+                `,
+                [title, content]
             );
 
-            res.json({ success: true, id: result.insertId });
+            res.json({
+                success: true,
+                id: result.insertId
+            });
+
         } catch (error) {
             console.error('Error creating announcement:', error);
             res.status(500).json({ success: false, error: 'Database error' });
@@ -82,20 +98,22 @@ router.post(
     }
 );
 
-// UPDATE announcement
+// UPDATE ANNOUNCEMENT
 router.put(
     '/:id',
-    requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_ANNOUNCEMENTS'),
+    requireAnyRole(['Admin', 'Mod']),
+    requirePermission('EDIT_ANNOUNCEMENT'),
     async (req, res) => {
-        const { title, content, author } = req.body;
+        const { title, content } = req.body;
 
         try {
             const [result] = await pool.query(
-                `UPDATE announcements 
-                 SET title = ?, content = ?, author = ?, updatedAt = CURRENT_TIMESTAMP 
-                 WHERE id = ?`,
-                [title, content, author || null, req.params.id]
+                `
+                UPDATE announcements
+                SET title = ?, content = ?, updatedAt = CURRENT_TIMESTAMP
+                WHERE id = ?
+                `,
+                [title, content, req.params.id]
             );
 
             if (result.affectedRows === 0) {
@@ -105,7 +123,11 @@ router.put(
                 });
             }
 
-            res.json({ success: true, message: 'Announcement updated' });
+            res.json({
+                success: true,
+                message: 'Announcement updated'
+            });
+
         } catch (error) {
             console.error('Error updating announcement:', error);
             res.status(500).json({ success: false, error: 'Database error' });
@@ -113,11 +135,11 @@ router.put(
     }
 );
 
-// DELETE announcement
+// DELETE ANNOUNCEMENT
 router.delete(
     '/:id',
-    requireAnyRole(['Admin', 'Moderator']),
-    requirePermission('MANAGE_ANNOUNCEMENTS'),
+    requireAnyRole(['Admin', 'Mod']),
+    requirePermission('DELETE_ANNOUNCEMENT'),
     async (req, res) => {
         try {
             const [result] = await pool.query(
@@ -132,9 +154,48 @@ router.delete(
                 });
             }
 
-            res.json({ success: true, message: 'Announcement deleted' });
+            res.json({
+                success: true,
+                message: 'Announcement deleted'
+            });
+
         } catch (error) {
             console.error('Error deleting announcement:', error);
+            res.status(500).json({ success: false, error: 'Database error' });
+        }
+    }
+);
+
+// POST ANNOUNCEMENT (mark as posted)
+router.post(
+    '/:id/post',
+    requireAnyRole(['Admin', 'Mod']),
+    requirePermission('POST_ANNOUNCEMENT'),
+    async (req, res) => {
+        try {
+            const [result] = await pool.query(
+                `
+                UPDATE announcements
+                SET posted = 1, updatedAt = CURRENT_TIMESTAMP
+                WHERE id = ?
+                `,
+                [req.params.id]
+            );
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Announcement not found'
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Announcement posted'
+            });
+
+        } catch (error) {
+            console.error('Error posting announcement:', error);
             res.status(500).json({ success: false, error: 'Database error' });
         }
     }

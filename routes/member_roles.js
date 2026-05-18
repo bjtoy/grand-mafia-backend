@@ -2,21 +2,36 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 
+// Internal roles
+const INTERNAL_ROLES = require('../config/roles');
+
 // Permission middleware
 const {
     requireAnyRole,
     requirePermission
-} = require('../auth-middleware');
+} = require('../middleware/auth-middleware');
 
 // ============================================
-// PUBLIC / MEMBER-SAFE ROUTES (READ ONLY)
+// READ-ONLY MEMBER ROLE API (SECTION D)
+// Roles are now synced automatically by the
+// Role Sync Engine. Manual edits are disabled.
 // ============================================
 
 // GET all member-role links (public)
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM member_roles');
-        res.json({ success: true, member_roles: rows });
+        const [rows] = await pool.query(`
+            SELECT mr.*, r.name AS roleName
+            FROM member_roles mr
+            JOIN roles r ON r.id = mr.roleId
+            ORDER BY mr.memberId ASC
+        `);
+
+        res.json({
+            success: true,
+            member_roles: rows
+        });
+
     } catch (error) {
         console.error('Error fetching member_roles:', error);
         res.status(500).json({ success: false, error: 'Database error' });
@@ -26,11 +41,18 @@ router.get('/', async (req, res) => {
 // GET all roles for a specific member (public)
 router.get('/member/:memberId', async (req, res) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM member_roles WHERE memberId = ?',
-            [req.params.memberId]
-        );
-        res.json({ success: true, roles: rows });
+        const [rows] = await pool.query(`
+            SELECT r.*
+            FROM member_roles mr
+            JOIN roles r ON r.id = mr.roleId
+            WHERE mr.memberId = ?
+        `, [req.params.memberId]);
+
+        res.json({
+            success: true,
+            roles: rows
+        });
+
     } catch (error) {
         console.error('Error fetching roles for member:', error);
         res.status(500).json({ success: false, error: 'Database error' });
@@ -40,11 +62,18 @@ router.get('/member/:memberId', async (req, res) => {
 // GET all members with a specific role (public)
 router.get('/role/:roleId', async (req, res) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM member_roles WHERE roleId = ?',
-            [req.params.roleId]
-        );
-        res.json({ success: true, members: rows });
+        const [rows] = await pool.query(`
+            SELECT m.*
+            FROM member_roles mr
+            JOIN members m ON m.id = mr.memberId
+            WHERE mr.roleId = ?
+        `, [req.params.roleId]);
+
+        res.json({
+            success: true,
+            members: rows
+        });
+
     } catch (error) {
         console.error('Error fetching members for role:', error);
         res.status(500).json({ success: false, error: 'Database error' });
@@ -52,71 +81,33 @@ router.get('/role/:roleId', async (req, res) => {
 });
 
 // ============================================
-// PROTECTED ROUTES (MODERATOR + ADMIN ONLY)
+// PROTECTED ROUTES (DISABLED IN SECTION D)
+// Member roles cannot be manually edited.
 // ============================================
 
-// ASSIGN a role to a member
+// ASSIGN a role to a member (DISABLED)
 router.post(
     '/',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_ROLES'),
-    async (req, res) => {
-        const { memberId, roleId } = req.body;
-
-        if (!memberId || !roleId) {
-            return res.status(400).json({
-                success: false,
-                message: 'memberId and roleId are required'
-            });
-        }
-
-        try {
-            const [result] = await pool.query(
-                'INSERT INTO member_roles (memberId, roleId) VALUES (?, ?)',
-                [memberId, roleId]
-            );
-
-            res.json({ success: true, id: result.insertId });
-        } catch (error) {
-            console.error('Error assigning role:', error);
-            res.status(500).json({ success: false, error: 'Database error' });
-        }
+    (req, res) => {
+        return res.status(403).json({
+            success: false,
+            message: 'Member roles cannot be assigned manually. Roles are synced automatically from Discord.'
+        });
     }
 );
 
-// REMOVE a role from a member
+// REMOVE a role from a member (DISABLED)
 router.delete(
     '/',
-    requireAnyRole(['Admin', 'Moderator']),
+    requireAnyRole(['Admin', 'Mod']),
     requirePermission('MANAGE_ROLES'),
-    async (req, res) => {
-        const { memberId, roleId } = req.body;
-
-        if (!memberId || !roleId) {
-            return res.status(400).json({
-                success: false,
-                message: 'memberId and roleId are required'
-            });
-        }
-
-        try {
-            const [result] = await pool.query(
-                'DELETE FROM member_roles WHERE memberId = ? AND roleId = ?',
-                [memberId, roleId]
-            );
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Link not found'
-                });
-            }
-
-            res.json({ success: true, message: 'Role removed from member' });
-        } catch (error) {
-            console.error('Error removing role:', error);
-            res.status(500).json({ success: false, error: 'Database error' });
-        }
+    (req, res) => {
+        return res.status(403).json({
+            success: false,
+            message: 'Member roles cannot be removed manually. Roles are synced automatically from Discord.'
+        });
     }
 );
 
