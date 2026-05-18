@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model activity_log {
+  id         Int      @id @default(autoincrement())
+  action     String   @db.VarChar(100)
+  details    Json?
+  userId     String?  @db.VarChar(255)
+  ipAddress  String?  @db.VarChar(45)
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model announcements {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(255)
+  message   String?
+  color     String?  @db.VarChar(7)
+  channel   String?  @db.VarChar(255)
+  author    String?  @db.VarChar(255)
+  posted    Boolean  @default(false)
+  postedAt  DateTime?
+  updatedAt DateTime @updatedAt
+}
+
+model audit_log {
+  id          Int      @id @default(autoincrement())
+  performedBy String?  @db.VarChar(255)
+  entityType  String   @db.VarChar(100)
+  entityId    Int?
+  action      String   @db.VarChar(100)
+  changes     Json?
+  createdAt   DateTime @default(now())
+}
+
+model bans {
+  id          Int      @id @default(autoincrement())
+  memberId    Int
+  reason      String?
+  bannedBy    String?  @db.VarChar(255)
+  bannedById  Int?
+  permanent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+}
+
+model channel_permissions {
+  id         Int      @id @default(autoincrement())
+  channelId  Int
+  canView    Boolean  @default(false)
+  canSend    Boolean  @default(false)
+  canDelete  Boolean  @default(false)
+  canManage  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model channels {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  description     String?
+  category        String?  @db.VarChar(100)
+  discordChannelId String? @db.VarChar(255)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model guide_versions {
+  id         Int      @id @default(autoincrement())
+  guideId    Int
+  content    String?
+  author     String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
+}
+
+model guides {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  content     String?
+  category    String?  @db.VarChar(100)
+  author      String?  @db.VarChar(255)
+  style       String?  @db.VarChar(50)
+  views       Int?     @default(0)
+  likes       Int?     @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model member_roles {
+  id       Int @id @default(autoincrement())
+  memberId Int
+  roleId   Int
+}
+
+model members {
+  id         Int      @id @default(autoincrement())
+  discordId  String?  @db.VarChar(255)
+  username   String?  @db.VarChar(255)
+  email      String?  @db.VarChar(255)
+  avatar     String?  @db.VarChar(255)
+  joinedAt   DateTime?
+  lastSeen   DateTime?
+  warnings   Int?     @default(0)
+  banned     Boolean  @default(false)
+  muted      Boolean  @default(false)
+  mute       String?  @db.VarChar(100)
+  notes      String?
+  assignedBy String?  @db.VarChar(255)
+  assignedAt DateTime?
+  updatedAt  DateTime @updatedAt
+}
+
+model moderation_log {
+  id           Int      @id @default(autoincrement())
+  targetUserId Int?
+  targetUser   String?  @db.VarChar(255)
+  moderatorId  Int?
+  reason       String?
+  duration     Int?
+  createdAt    DateTime @default(now())
+}
+
+model mutes {
+  id         Int      @id @default(autoincrement())
+  memberId   Int?
+  reason     String?
+  mutedBy    String?  @db.VarChar(255)
+  mutedById  Int?
+  moderatorId Int?
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime?
+}
+
+model roles {
+  id            Int      @id @default(autoincrement())
+  name          String   @db.VarChar(100)
+  color         String?  @db.VarChar(7)
+  discordRoleId String?  @db.VarChar(50)
+  permissions   Json?
+  memberCount   Int?     @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model server_settings {
+  id          Int      @id @default(autoincrement())
+  setting_key String   @db.VarChar(255)
+  type        String   @db.VarChar(50)
+  value       String?
+  updatedAt   DateTime @updatedAt
+}
+
+model translations {
+  id             Int      @id @default(autoincrement())
+  originalText   String?
+  translatedText String?
+  sourceLanguage String?  @db.VarChar(10)
+  targetLanguage String?  @db.VarChar(10)
+  requestedBy    String?  @db.VarChar(255)
+  createdAt      DateTime @default(now())
+}
+
+model users {
+  id           Int      @id @default(autoincrement())
+  username     String?  @db.VarChar(255)
+  email        String?  @db.VarChar(255)
+  avatar       String?  @db.VarChar(255)
+  discriminator String? @db.VarChar(10)
+  memberId     Int?
+  createdAt    DateTime @default(now())
+}
+
+model warnings {
+  id         Int      @id @default(autoincrement())
+  memberId   Int?
+  reason     String?
+  issuedBy   String?  @db.VarChar(255)
+  issuedById Int?
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime?
+}
