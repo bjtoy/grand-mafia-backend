@@ -1,72 +1,111 @@
-import {
-  SlashCommandBuilder,
-  PermissionFlagsBits,
-} from 'discord.js';
+// ============================================
+// /guide-styled — Backend‑Integrated Command
+// Admin + Mod only
+// ============================================
 
-import {
-  sectionHeader,
-  step,
-  tip,
-  warning,
-  important,
-  buildGuideContent,
-  createGuideEmbed,
-} from '../utils/guideStyles.js';
+const {
+    SlashCommandBuilder,
+    PermissionFlagsBits
+} = require('discord.js');
 
-export default {
-  data: new SlashCommandBuilder()
-    .setName('guide-styled')
-    .setDescription('Post a styled training guide for the server')
-    .addStringOption(option =>
-      option
-        .setName('title')
-        .setDescription('Title of the guide')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName('category')
-        .setDescription('Guide category (training, raids, enforcers, etc.)')
-        .setRequired(true)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+const {
+    sectionHeader,
+    step,
+    tip,
+    warning,
+    important,
+    buildGuideContent,
+    createGuideEmbed
+} = require('../utils/guideStyles');
 
-  async execute(interaction) {
-    const title = interaction.options.getString('title');
-    const category = interaction.options.getString('category');
+const { mapDiscordRolesToInternal } = require('../../roleSync');
 
-    /**
-     * Example training guide structure.
-     * You can later make this dynamic or driven by options/modals.
-     */
-    const guideBody = buildGuideContent([
-      sectionHeader('Overview'),
-      'This training guide outlines standard expectations and procedures.',
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('guide-styled')
+        .setDescription('Post a styled training guide for the server (Admin/Mod only)')
+        .addStringOption(opt =>
+            opt
+                .setName('title')
+                .setDescription('Title of the guide')
+                .setRequired(true)
+        )
+        .addStringOption(opt =>
+            opt
+                .setName('category')
+                .setDescription('Guide category (training, raids, enforcers, etc.)')
+                .setRequired(true)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-      sectionHeader('Responsibilities'),
-      step(1, 'Read and understand the guide fully.'),
-      step(2, 'Ask a senior member if anything is unclear.'),
-      step(3, 'Apply these rules consistently.'),
+    async execute(interaction, pool) {
+        try {
+            // ============================================
+            // INTERNAL PERMISSION CHECK
+            // ============================================
+            const discordRoleIds = interaction.member.roles.cache.map(r => r.id);
+            const internalRoles = mapDiscordRolesToInternal(discordRoleIds);
 
-      important('Failure to follow training procedures may result in warnings.'),
+            if (!internalRoles.includes('Admin') && !internalRoles.includes('Mod')) {
+                return interaction.reply({
+                    content: '❌ You do not have permission to use this command.',
+                    ephemeral: true
+                });
+            }
 
-      sectionHeader('Tips'),
-      tip('Take screenshots or notes for later reference.'),
-      tip('Revisit this guide regularly.'),
+            // ============================================
+            // GET OPTIONS
+            // ============================================
+            const title = interaction.options.getString('title');
+            const category = interaction.options.getString('category');
 
-      sectionHeader('Warnings'),
-      warning('Do not skip steps or improvise without approval.'),
-    ]);
+            // ============================================
+            // BUILD GUIDE CONTENT
+            // (Static example — will be dynamic in G‑tasks)
+            // ============================================
+            const guideBody = buildGuideContent([
+                sectionHeader('Overview'),
+                'This training guide outlines standard expectations and procedures.',
 
-    const embed = createGuideEmbed(
-      title,
-      guideBody,
-      category,
-      interaction.user
-    );
+                sectionHeader('Responsibilities'),
+                step(1, 'Read and understand the guide fully.'),
+                step(2, 'Ask a senior member if anything is unclear.'),
+                step(3, 'Apply these rules consistently.'),
 
-    await interaction.reply({
-      embeds: [embed],
-    });
-  },
+                important('Failure to follow training procedures may result in warnings.'),
+
+                sectionHeader('Tips'),
+                tip('Take screenshots or notes for later reference.'),
+                tip('Revisit this guide regularly.'),
+
+                sectionHeader('Warnings'),
+                warning('Do not skip steps or improvise without approval.')
+            ]);
+
+            // ============================================
+            // BUILD EMBED
+            // ============================================
+            const embed = createGuideEmbed(
+                title,
+                guideBody,
+                category,
+                interaction.user
+            );
+
+            // ============================================
+            // SEND GUIDE
+            // ============================================
+            await interaction.reply({
+                embeds: [embed]
+            });
+
+        } catch (error) {
+            console.error('❌ guide-styled command error:', error);
+
+            return interaction.reply({
+                content: '❌ Unexpected error while generating styled guide.',
+                ephemeral: true
+            });
+        }
+    }
 };
