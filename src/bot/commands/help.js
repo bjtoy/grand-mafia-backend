@@ -1,54 +1,77 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+// ============================================
+// /help — Backend‑Integrated Command
+// Public command
+// ============================================
 
-export default {
-  data: new SlashCommandBuilder()
-    .setName('help')
-    .setDescription('Display all available bot commands'),
-  cooldown: 2,
-  async execute(interaction) {
-    const helpEmbed = new EmbedBuilder()
-      .setColor('#0099ff')
-      .setTitle('📚 Grand Mafia Bot - Command Help')
-      .setDescription('Here are all the available commands for managing your faction server.')
-      .addFields(
-        {
-          name: '🌐 Translation Commands',
-          value: '`/translate` - Translate text to any language',
-          inline: false,
-        },
-        {
-          name: '📢 Announcement Commands',
-          value: '`/announce` - Post an announcement to the server (Moderators only)',
-          inline: false,
-        },
-        {
-          name: '⚔️ Moderation Commands',
-          value:
-            '`/kick` - Kick a user from the server\n' +
-            '`/ban` - Ban a user from the server\n' +
-            '`/mute` - Mute a user temporarily\n' +
-            '`/warn` - Issue a warning to a user',
-          inline: false,
-        },
-        {
-          name: '❓ Other Commands',
-          value: '`/help` - Display this help message\n`/ping` - Check bot latency\n`/serverinfo` - Get server information',
-          inline: false,
-        }
-      )
-      .addFields(
-        {
-          name: '💡 Tips',
-          value:
-            '• Use `/translate text:hello language:es` to translate\n' +
-            '• Moderation commands require appropriate permissions\n' +
-            '• All commands support autocomplete where applicable',
-          inline: false,
-        }
-      )
-      .setFooter({ text: 'Grand Mafia Faction Server' })
-      .setTimestamp();
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
-    await interaction.reply({ embeds: [helpEmbed] });
-  },
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('help')
+        .setDescription('Display all available bot commands'),
+
+    cooldown: 2,
+
+    async execute(interaction) {
+        try {
+            const helpEmbed = new EmbedBuilder()
+                .setColor('#0099ff')
+                .setTitle('📚 Grand Mafia Bot — Command Help')
+                .setDescription('Here are the available commands for managing your faction server.')
+                .addFields(
+                    {
+                        name: '🌐 Translation Commands',
+                        value: '`/translate` — Translate text to any language'
+                    },
+                    {
+                        name: '📢 Announcement Commands',
+                        value: '`/announce` — Post an announcement (Admin/Mod)'
+                    },
+                    {
+                        name: '📖 Guide Commands',
+                        value:
+                            '`/guide` — Create, post, and list guides (Admin/Mod)\n' +
+                            '`/guide-styled` — Post a styled training guide (Admin/Mod)'
+                    },
+                    {
+                        name: '⚔️ Moderation Commands',
+                        value:
+                            '`/kick` — Kick a user\n' +
+                            '`/ban` — Ban a user\n' +
+                            '`/mute` — Mute a user\n' +
+                            '`/warn` — Issue a warning'
+                    },
+                    {
+                        name: '🔐 Channel Management',
+                        value: '`/channel-access` — Allow/Deny role access to channels'
+                    },
+                    {
+                        name: '❓ Other Commands',
+                        value:
+                            '`/help` — Display this help message\n' +
+                            '`/ping` — Check bot latency\n' +
+                            '`/serverinfo` — Get server information'
+                    },
+                    {
+                        name: '💡 Tips',
+                        value:
+                            '• Use `/translate text:hello language:es`\n' +
+                            '• Moderation commands require Admin/Mod roles\n' +
+                            '• All commands support autocomplete where applicable'
+                    }
+                )
+                .setFooter({ text: 'Grand Mafia Faction Server' })
+                .setTimestamp();
+
+            await interaction.reply({ embeds: [helpEmbed] });
+
+        } catch (error) {
+            console.error('❌ Help command error:', error);
+
+            return interaction.reply({
+                content: '❌ Unexpected error while generating help menu.',
+                ephemeral: true
+            });
+        }
+    }
 };
