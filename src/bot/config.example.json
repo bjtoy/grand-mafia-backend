@@ -1,0 +1,100 @@
+{
+  "bot": {
+    "name": "Grand Mafia Bot",
+    "version": "1.0.0",
+    "prefix": "/",
+    "description": "Discord bot for The Grand Mafia faction server"
+  },
+  "features": {
+    "translation": {
+      "enabled": true,
+      "provider": "google-translate",
+      "supportedLanguages": [
+        "en", "es", "fr", "de", "ja", "zh", "ru", "ar", "pt", "it", "ko",
+        "pl", "tr", "nl", "sv", "no", "da", "fi", "hu", "cs", "ro"
+      ]
+    },
+    "moderation": {
+      "enabled": true,
+      "logChannel": "moderation-logs",
+      "actions": ["kick", "ban", "mute", "warn"]
+    },
+    "announcements": {
+      "enabled": true,
+      "defaultChannel": "announcements",
+      "requiresApproval": false
+    },
+    "serverManagement": {
+      "enabled": true,
+      "trackMembers": true,
+      "trackActivity": true
+    }
+  },
+  "permissions": {
+    "moderator": {
+      "canKick": true,
+      "canBan": true,
+      "canMute": true,
+      "canWarn": true,
+      "canAnnounce": true,
+      "canManageRoles": false
+    },
+    "admin": {
+      "canKick": true,
+      "canBan": true,
+      "canMute": true,
+      "canWarn": true,
+      "canAnnounce": true,
+      "canManageRoles": true,
+      "canConfigureBot": true
+    }
+  },
+  "channels": {
+    "announcements": "announcements",
+    "moderation": "mod-logs",
+    "general": "general",
+    "strategy": "strategy"
+  },
+  "roles": {
+    "moderator": "Moderator",
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "cooldowns": {
+    "translate": 2,
+    "announce": 5,
+    "kick": 3,
+    "ban": 3,
+    "mute": 3,
+    "warn": 2,
+    "help": 2,
+    "ping": 1,
+    "serverinfo": 2
+  },
+  "limits": {
+    "maxWarningsBeforeBan": 3,
+    "defaultMuteDuration": 300,
+    "maxAnnouncementLength": 2000,
+    "maxTranslationLength": 500
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "file": "logs/bot.log",
+    "maxSize": "10m",
+    "maxFiles": 5
+  },
+  "api": {
+    "translation": {
+      "provider": "google-translate-api-x",
+      "timeout": 5000
+    }
+  },
+  "security": {
+    "requiresApprovalForAnnouncements": false,
+    "logAllActions": true,
+    "enableRateLimiting": true,
+    "rateLimitWindow": 60000,
+    "rateLimitMaxRequests": 10
+  }
+}
