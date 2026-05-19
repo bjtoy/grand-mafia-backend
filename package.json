@@ -2,11 +2,11 @@
   "name": "grand-mafia-backend",
   "version": "1.0.0",
   "description": "Backend server for The Grand Mafia dashboard",
-  "main": "server/index.js",
+  "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "nodemon server/index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "@prisma/client": "^7.8.0",
