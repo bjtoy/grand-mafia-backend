@@ -1,59 +1,77 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import translate from '@vitalets/google-translate-api';
+// ============================================
+// /translate — Backend‑Integrated Command
+// Public command
+// ============================================
 
-export default {
-  data: new SlashCommandBuilder()
-    .setName('translate')
-    .setDescription('Translate text to a specified language')
-    .addStringOption(option =>
-      option
-        .setName('text')
-        .setDescription('The text to translate')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName('language')
-        .setDescription('Target language (e.g., en, es, fr, de, ja, zh, ru, ar, etc.)')
-        .setRequired(true)
-    ),
-  cooldown: 2,
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const translate = require('@vitalets/google-translate-api');
 
-  async execute(interaction) {
-    await interaction.deferReply();
-
-    const text = interaction.options.getString('text');
-    const targetLanguage = interaction.options.getString('language').toLowerCase();
-
-    try {
-      const result = await translate(text, { to: targetLanguage });
-
-      const embed = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setTitle('🌐 Translation')
-        .addFields(
-          { name: 'Original Text', value: text, inline: false },
-          { name: `Translated to ${targetLanguage.toUpperCase()}`, value: result.text, inline: false },
-          { name: 'Detected Language', value: result.from.language.iso.toUpperCase(), inline: true }
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('translate')
+        .setDescription('Translate text to a specified language')
+        .addStringOption(opt =>
+            opt
+                .setName('text')
+                .setDescription('The text to translate')
+                .setRequired(true)
         )
-        .setFooter({ text: 'Powered by Google Translate (Unofficial API)' })
-        .setTimestamp();
+        .addStringOption(opt =>
+            opt
+                .setName('language')
+                .setDescription('Target language (e.g., en, es, fr, de, ja, zh, ru, ar)')
+                .setRequired(true)
+        ),
 
-      await interaction.editReply({ embeds: [embed] });
+    cooldown: 2,
 
-    } catch (error) {
-      console.error('Translation error:', error);
+    async execute(interaction) {
+        try {
+            await interaction.deferReply();
 
-      const errorEmbed = new EmbedBuilder()
-        .setColor('#ff0000')
-        .setTitle('❌ Translation Error')
-        .setDescription(`Could not translate to language code: \`${targetLanguage}\``)
-        .addFields(
-          { name: 'Tip', value: 'Use standard language codes like: en, es, fr, de, ja, zh, ru, ar, pt, it, ko' }
-        )
-        .setTimestamp();
+            const text = interaction.options.getString('text');
+            const targetLanguage = interaction.options.getString('language').toLowerCase();
 
-      await interaction.editReply({ embeds: [errorEmbed] });
+            // ============================================
+            // PERFORM TRANSLATION
+            // ============================================
+            const result = await translate(text, { to: targetLanguage });
+
+            const embed = new EmbedBuilder()
+                .setColor('#0099ff')
+                .setTitle('🌐 Translation')
+                .addFields(
+                    { name: 'Original Text', value: text, inline: false },
+                    {
+                        name: `Translated to ${targetLanguage.toUpperCase()}`,
+                        value: result.text,
+                        inline: false
+                    },
+                    {
+                        name: 'Detected Language',
+                        value: result.from.language.iso.toUpperCase(),
+                        inline: true
+                    }
+                )
+                .setFooter({ text: 'Powered by Google Translate (Unofficial API)' })
+                .setTimestamp();
+
+            return interaction.editReply({ embeds: [embed] });
+
+        } catch (error) {
+            console.error('❌ Translation error:', error);
+
+            const errorEmbed = new EmbedBuilder()
+                .setColor('#ff0000')
+                .setTitle('❌ Translation Error')
+                .setDescription(`Could not translate to language code: \`${interaction.options.getString('language')}\``)
+                .addFields({
+                    name: 'Tip',
+                    value: 'Use standard language codes like: en, es, fr, de, ja, zh, ru, ar, pt, it, ko'
+                })
+                .setTimestamp();
+
+            return interaction.editReply({ embeds: [errorEmbed] });
+        }
     }
-  },
 };
