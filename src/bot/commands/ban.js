@@ -1,54 +1,92 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+// ============================================
+// /ban — Backend‑Integrated Command
+// Admin + Mod only
+// ============================================
 
-export default {
-  data: new SlashCommandBuilder()
-    .setName('ban')
-    .setDescription('Ban a user from the server')
-    .addUserOption(option =>
-      option
-        .setName('user')
-        .setDescription('User to ban')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName('reason')
-        .setDescription('Reason for banning')
-        .setRequired(false)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
-  cooldown: 3,
-  async execute(interaction) {
-    if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
-      return interaction.reply({
-        content: '❌ You do not have permission to ban members!',
-        ephemeral: true,
-      });
-    }
+const {
+    SlashCommandBuilder,
+    EmbedBuilder,
+    PermissionFlagsBits
+} = require('discord.js');
 
-    const user = interaction.options.getUser('user');
-    const reason = interaction.options.getString('reason') || 'No reason provided';
+const { mapDiscordRolesToInternal } = require('../../roleSync');
 
-    try {
-      await interaction.guild.members.ban(user, { reason });
-
-      const banEmbed = new EmbedBuilder()
-        .setColor('#8b0000')
-        .setTitle('🚫 User Banned')
-        .addFields(
-          { name: 'User', value: `${user.tag}`, inline: true },
-          { name: 'Reason', value: reason, inline: true },
-          { name: 'Moderator', value: interaction.user.tag, inline: true }
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('ban')
+        .setDescription('Ban a user from the server (Admin/Mod only)')
+        .addUserOption(option =>
+            option
+                .setName('user')
+                .setDescription('User to ban')
+                .setRequired(true)
         )
-        .setTimestamp();
+        .addStringOption(option =>
+            option
+                .setName('reason')
+                .setDescription('Reason for banning')
+                .setRequired(false)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
-      await interaction.reply({ embeds: [banEmbed] });
-    } catch (error) {
-      console.error('Ban error:', error);
-      await interaction.reply({
-        content: '❌ Error banning user!',
-        ephemeral: true,
-      });
+    cooldown: 3,
+
+    async execute(interaction, pool) {
+        try {
+            // ============================================
+            // INTERNAL PERMISSION CHECK
+            // ============================================
+            const discordRoleIds = interaction.member.roles.cache.map(r => r.id);
+            const internalRoles = mapDiscordRolesToInternal(discordRoleIds);
+
+            if (!internalRoles.includes('Admin') && !internalRoles.includes('Mod')) {
+                return interaction.reply({
+                    content: '❌ You do not have permission to use this command.',
+                    ephemeral: true
+                });
+            }
+
+            // ============================================
+            // GET OPTIONS
+            // ============================================
+            const user = interaction.options.getUser('user');
+            const reason = interaction.options.getString('reason') || 'No reason provided';
+
+            // ============================================
+            // BAN USER
+            // ============================================
+            await interaction.guild.members.ban(user, { reason });
+
+            // ============================================
+            // BAN EMBED
+            // ============================================
+            const banEmbed = new EmbedBuilder()
+                .setColor('#8b0000')
+                .setTitle('🚫 User Banned')
+                .addFields(
+                    { name: 'User', value: `${user.tag}`, inline: true },
+                    { name: 'Reason', value: reason, inline: true },
+                    { name: 'Moderator', value: interaction.user.tag, inline: true }
+                )
+                .setTimestamp();
+
+            await interaction.reply({ embeds: [banEmbed] });
+
+            // ============================================
+            // (OPTIONAL) LOG TO DATABASE — G‑TASK LATER
+            // ============================================
+            // await pool.query(
+            //     'INSERT INTO mod_logs (action, userId, moderatorId, reason) VALUES (?, ?, ?, ?)',
+            //     ['BAN', user.id, interaction.user.id, reason]
+            // );
+
+        } catch (error) {
+            console.error('❌ Ban error:', error);
+
+            return interaction.reply({
+                content: '❌ Error banning user.',
+                ephemeral: true
+            });
+        }
     }
-  },
 };
