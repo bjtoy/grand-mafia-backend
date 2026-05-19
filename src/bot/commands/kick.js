@@ -1,69 +1,108 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+// ============================================
+// /kick — Backend‑Integrated Command
+// Admin + Mod only
+// ============================================
 
-export default {
-  data: new SlashCommandBuilder()
-    .setName('kick')
-    .setDescription('Kick a user from the server')
-    .addUserOption(option =>
-      option
-        .setName('user')
-        .setDescription('User to kick')
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName('reason')
-        .setDescription('Reason for kicking')
-        .setRequired(false)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
-  cooldown: 3,
-  async execute(interaction) {
-    if (!interaction.member.permissions.has(PermissionFlagsBits.KickMembers)) {
-      return interaction.reply({
-        content: '❌ You do not have permission to kick members!',
-        ephemeral: true,
-      });
-    }
+const {
+    SlashCommandBuilder,
+    EmbedBuilder,
+    PermissionFlagsBits
+} = require('discord.js');
 
-    const user = interaction.options.getUser('user');
-    const reason = interaction.options.getString('reason') || 'No reason provided';
-    const member = await interaction.guild.members.fetch(user.id);
+const { mapDiscordRolesToInternal } = require('../../roleSync');
 
-    if (!member) {
-      return interaction.reply({
-        content: '❌ User not found in this server!',
-        ephemeral: true,
-      });
-    }
-
-    if (!member.kickable) {
-      return interaction.reply({
-        content: '❌ I cannot kick this user. They may have higher permissions than me.',
-        ephemeral: true,
-      });
-    }
-
-    try {
-      await member.kick(reason);
-
-      const kickEmbed = new EmbedBuilder()
-        .setColor('#ff0000')
-        .setTitle('👢 User Kicked')
-        .addFields(
-          { name: 'User', value: `${user.tag}`, inline: true },
-          { name: 'Reason', value: reason, inline: true },
-          { name: 'Moderator', value: interaction.user.tag, inline: true }
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('kick')
+        .setDescription('Kick a user from the server (Admin/Mod only)')
+        .addUserOption(opt =>
+            opt
+                .setName('user')
+                .setDescription('User to kick')
+                .setRequired(true)
         )
-        .setTimestamp();
+        .addStringOption(opt =>
+            opt
+                .setName('reason')
+                .setDescription('Reason for kicking')
+                .setRequired(false)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
 
-      await interaction.reply({ embeds: [kickEmbed] });
-    } catch (error) {
-      console.error('Kick error:', error);
-      await interaction.reply({
-        content: '❌ Error kicking user!',
-        ephemeral: true,
-      });
+    cooldown: 3,
+
+    async execute(interaction, pool) {
+        try {
+            // ============================================
+            // INTERNAL PERMISSION CHECK
+            // ============================================
+            const discordRoleIds = interaction.member.roles.cache.map(r => r.id);
+            const internalRoles = mapDiscordRolesToInternal(discordRoleIds);
+
+            if (!internalRoles.includes('Admin') && !internalRoles.includes('Mod')) {
+                return interaction.reply({
+                    content: '❌ You do not have permission to use this command.',
+                    ephemeral: true
+                });
+            }
+
+            // ============================================
+            // GET OPTIONS
+            // ============================================
+            const user = interaction.options.getUser('user');
+            const reason = interaction.options.getString('reason') || 'No reason provided';
+
+            const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+
+            if (!member) {
+                return interaction.reply({
+                    content: '❌ User not found in this server.',
+                    ephemeral: true
+                });
+            }
+
+            if (!member.kickable) {
+                return interaction.reply({
+                    content: '❌ I cannot kick this user. They may have higher permissions than me.',
+                    ephemeral: true
+                });
+            }
+
+            // ============================================
+            // KICK USER
+            // ============================================
+            await member.kick(reason);
+
+            // ============================================
+            // KICK EMBED
+            // ============================================
+            const kickEmbed = new EmbedBuilder()
+                .setColor('#ff0000')
+                .setTitle('👢 User Kicked')
+                .addFields(
+                    { name: 'User', value: `${user.tag}`, inline: true },
+                    { name: 'Reason', value: reason, inline: true },
+                    { name: 'Moderator', value: interaction.user.tag, inline: true }
+                )
+                .setTimestamp();
+
+            await interaction.reply({ embeds: [kickEmbed] });
+
+            // ============================================
+            // (OPTIONAL) LOG TO DATABASE — G‑TASK LATER
+            // ============================================
+            // await pool.query(
+            //     'INSERT INTO mod_logs (action, userId, moderatorId, reason) VALUES (?, ?, ?, ?)',
+            //     ['KICK', user.id, interaction.user.id, reason]
+            // );
+
+        } catch (error) {
+            console.error('❌ Kick error:', error);
+
+            return interaction.reply({
+                content: '❌ Error kicking user.',
+                ephemeral: true
+            });
+        }
     }
-  },
 };
