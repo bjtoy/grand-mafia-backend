@@ -1,70 +1,109 @@
-import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+// ============================================
+// /mute — Backend‑Integrated Command
+// Admin + Mod only
+// ============================================
 
-export default {
-  data: new SlashCommandBuilder()
-    .setName('mute')
-    .setDescription('Mute a user temporarily')
-    .addUserOption(option =>
-      option
-        .setName('user')
-        .setDescription('User to mute')
-        .setRequired(true)
-    )
-    .addIntegerOption(option =>
-      option
-        .setName('duration')
-        .setDescription('Duration in seconds (default: 300 = 5 minutes)')
-        .setRequired(false)
-    )
-    .addStringOption(option =>
-      option
-        .setName('reason')
-        .setDescription('Reason for muting')
-        .setRequired(false)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
-  cooldown: 3,
-  async execute(interaction) {
-    if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-      return interaction.reply({
-        content: '❌ You do not have permission to mute members!',
-        ephemeral: true,
-      });
-    }
+const {
+    SlashCommandBuilder,
+    EmbedBuilder,
+    PermissionFlagsBits
+} = require('discord.js');
 
-    const user = interaction.options.getUser('user');
-    const duration = interaction.options.getInteger('duration') || 300; // 5 minutes default
-    const reason = interaction.options.getString('reason') || 'No reason provided';
-    const member = await interaction.guild.members.fetch(user.id);
+const { mapDiscordRolesToInternal } = require('../../roleSync');
 
-    if (!member) {
-      return interaction.reply({
-        content: '❌ User not found in this server!',
-        ephemeral: true,
-      });
-    }
-
-    try {
-      await member.timeout(duration * 1000, reason);
-
-      const muteEmbed = new EmbedBuilder()
-        .setColor('#ffa500')
-        .setTitle('🔇 User Muted')
-        .addFields(
-          { name: 'User', value: `${user.tag}`, inline: true },
-          { name: 'Duration', value: `${duration} seconds`, inline: true },
-          { name: 'Reason', value: reason, inline: false },
-          { name: 'Moderator', value: interaction.user.tag, inline: true }
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('mute')
+        .setDescription('Mute a user temporarily (Admin/Mod only)')
+        .addUserOption(opt =>
+            opt
+                .setName('user')
+                .setDescription('User to mute')
+                .setRequired(true)
         )
-        .setTimestamp();
+        .addIntegerOption(opt =>
+            opt
+                .setName('duration')
+                .setDescription('Duration in seconds (default: 300 = 5 minutes)')
+                .setRequired(false)
+        )
+        .addStringOption(opt =>
+            opt
+                .setName('reason')
+                .setDescription('Reason for muting')
+                .setRequired(false)
+        )
+        .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-      await interaction.reply({ embeds: [muteEmbed] });
-    } catch (error) {
-      console.error('Mute error:', error);
-      await interaction.reply({
-        content: '❌ Error muting user!',
-        ephemeral: true,
-      });
+    cooldown: 3,
+
+    async execute(interaction, pool) {
+        try {
+            // ============================================
+            // INTERNAL PERMISSION CHECK
+            // ============================================
+            const discordRoleIds = interaction.member.roles.cache.map(r => r.id);
+            const internalRoles = mapDiscordRolesToInternal(discordRoleIds);
+
+            if (!internalRoles.includes('Admin') && !internalRoles.includes('Mod')) {
+                return interaction.reply({
+                    content: '❌ You do not have permission to use this command.',
+                    ephemeral: true
+                });
+            }
+
+            // ============================================
+            // GET OPTIONS
+            // ============================================
+            const user = interaction.options.getUser('user');
+            const duration = interaction.options.getInteger('duration') || 300; // default 5 minutes
+            const reason = interaction.options.getString('reason') || 'No reason provided';
+
+            const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+
+            if (!member) {
+                return interaction.reply({
+                    content: '❌ User not found in this server.',
+                    ephemeral: true
+                });
+            }
+
+            // ============================================
+            // APPLY TIMEOUT (MUTE)
+            // ============================================
+            await member.timeout(duration * 1000, reason);
+
+            // ============================================
+            // MUTE EMBED
+            // ============================================
+            const muteEmbed = new EmbedBuilder()
+                .setColor('#ffa500')
+                .setTitle('🔇 User Muted')
+                .addFields(
+                    { name: 'User', value: `${user.tag}`, inline: true },
+                    { name: 'Duration', value: `${duration} seconds`, inline: true },
+                    { name: 'Reason', value: reason, inline: false },
+                    { name: 'Moderator', value: interaction.user.tag, inline: true }
+                )
+                .setTimestamp();
+
+            await interaction.reply({ embeds: [muteEmbed] });
+
+            // ============================================
+            // (OPTIONAL) LOG TO DATABASE — G‑TASK LATER
+            // ============================================
+            // await pool.query(
+            //     'INSERT INTO mod_logs (action, userId, moderatorId, reason, duration) VALUES (?, ?, ?, ?, ?)',
+            //     ['MUTE', user.id, interaction.user.id, reason, duration]
+            // );
+
+        } catch (error) {
+            console.error('❌ Mute error:', error);
+
+            return interaction.reply({
+                content: '❌ Error muting user.',
+                ephemeral: true
+            });
+        }
     }
-  },
 };
