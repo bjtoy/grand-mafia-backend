@@ -1,87 +1,64 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id        String    @id @default(uuid())
-  discordId String    @unique
-  username  String
-  createdAt DateTime  @default(now())
-
-  logs GuildLog[]
+datasource db {
+  provider = "postgresql"
 }
 
-model GuildLog {
+model User {
   id        String   @id @default(uuid())
-  guildId   String
-  userId    String
-  action    String
-  details   String?
+  discordId String   @unique
+  username  String
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
+  updatedAt DateTime @updatedAt
 }
 
 model Member {
-  id        String        @id @default(uuid())
-  discordId String        @unique
-  username  String
-  email     String?
-  avatar    String?
-  role      String?
-  joinedAt  DateTime?
-  lastSeen  DateTime?
-  notes     String?
-  warnings  Int           @default(0)
-  muted     Boolean       @default(false)
-  banned    Boolean       @default(false)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id        String   @id @default(uuid())
+  discordId String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   roles     MemberRole[]
-  logs      ModerationLog[]
 }
 
 model Role {
-  id            String        @id @default(uuid())
-  name          String        @unique
-  discordRoleId String?
-  color         String?
-  permissions   String?
-  memberCount   Int           @default(0)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  members       MemberRole[]
+  members   MemberRole[]
 }
 
 model MemberRole {
-  id         String   @id @default(uuid())
-  memberId   String
-  roleId     String
-  assignedAt DateTime @default(now())
-  assignedBy String?
+  id        String   @id @default(uuid())
+  memberId  String
+  roleId    String
 
   member Member @relation(fields: [memberId], references: [id])
   role   Role   @relation(fields: [roleId], references: [id])
 }
 
-model ModerationLog {
-  id           String   @id @default(uuid())
-  action       String
-  targetUser   String?
-  targetUserId String?
-  moderator    String?
-  moderatorId  String?
-  reason       String?
-  duration     Int?
-  createdAt    DateTime @default(now())
+model Guide {
+  id          String         @id @default(uuid())
+  title       String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
-  memberId     String?
-  member       Member?  @relation(fields: [memberId], references: [id])
+  versions    GuideVersion[]
 }
+
+model GuideVersion {
+  id        String   @id @default(uuid())
+  guideId   String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guide Guide @relation(fields: [guideId], references: [id])
+}
+
+model Announcement
