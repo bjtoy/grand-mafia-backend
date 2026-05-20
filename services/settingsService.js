@@ -1,44 +1,52 @@
-const pool = require("../config/db");
+const prisma = require("../config/db");
 
 module.exports = {
+  // ============================================
+  // GET ALL SETTINGS
+  // ============================================
   async getAll() {
-    const [rows] = await pool.query(
-      `SELECT * FROM settings ORDER BY id ASC`
-    );
-    return rows;
+    return await prisma.setting.findMany({
+      orderBy: { id: "asc" }
+    });
   },
 
+  // ============================================
+  // UPDATE SETTING
+  // ============================================
   async update(id, value) {
-    const [result] = await pool.query(
-      `
-      UPDATE settings
-      SET value = ?, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-      [value, id]
-    );
+    const updated = await prisma.setting.updateMany({
+      where: { id },
+      data: {
+        value,
+        updatedAt: new Date()
+      }
+    });
 
-    return result.affectedRows > 0;
+    return updated.count > 0;
   },
 
+  // ============================================
+  // CREATE SETTING
+  // ============================================
   async create(key, value) {
-    const [result] = await pool.query(
-      `
-      INSERT INTO settings (keyName, value)
-      VALUES (?, ?)
-    `,
-      [key, value]
-    );
+    const setting = await prisma.setting.create({
+      data: {
+        keyName: key,
+        value
+      }
+    });
 
-    return result.insertId;
+    return setting.id;
   },
 
+  // ============================================
+  // DELETE SETTING
+  // ============================================
   async remove(id) {
-    const [result] = await pool.query(
-      `DELETE FROM settings WHERE id = ?`,
-      [id]
-    );
+    const deleted = await prisma.setting.deleteMany({
+      where: { id }
+    });
 
-    return result.affectedRows > 0;
-  },
+    return deleted.count > 0;
+  }
 };
