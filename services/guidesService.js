@@ -1,57 +1,79 @@
-const pool = require("../config/db");
+const prisma = require("../config/db");
 
 module.exports = {
+  // ============================================
+  // GET ALL GUIDES
+  // ============================================
   async getAll() {
-    const [rows] = await pool.query(
-      `SELECT * FROM guides ORDER BY updatedAt DESC`
-    );
-    return rows;
+    return await prisma.guide.findMany({
+      orderBy: { updatedAt: "desc" }
+    });
   },
 
+  // ============================================
+  // GET GUIDE BY ID
+  // ============================================
   async getById(id) {
-    const [rows] = await pool.query(`SELECT * FROM guides WHERE id = ?`, [id]);
-    return rows[0] || null;
+    return await prisma.guide.findUnique({
+      where: { id }
+    });
   },
 
+  // ============================================
+  // CREATE GUIDE
+  // ============================================
   async create(title, content, category) {
-    const [result] = await pool.query(
-      `
-      INSERT INTO guides (title, content, category)
-      VALUES (?, ?, ?)
-    `,
-      [title, content, category || null]
-    );
-    return result.insertId;
+    const guide = await prisma.guide.create({
+      data: {
+        title,
+        content,
+        category: category || null
+      }
+    });
+
+    return guide.id;
   },
 
+  // ============================================
+  // UPDATE GUIDE
+  // ============================================
   async update(id, title, content, category) {
-    const [result] = await pool.query(
-      `
-      UPDATE guides
-      SET title = ?, content = ?, category = ?, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-      [title, content, category || null, id]
-    );
+    const updated = await prisma.guide.updateMany({
+      where: { id },
+      data: {
+        title,
+        content,
+        category: category || null,
+        updatedAt: new Date()
+      }
+    });
 
-    return result.affectedRows > 0;
+    return updated.count > 0;
   },
 
+  // ============================================
+  // DELETE GUIDE
+  // ============================================
   async remove(id) {
-    const [result] = await pool.query(`DELETE FROM guides WHERE id = ?`, [id]);
-    return result.affectedRows > 0;
+    const deleted = await prisma.guide.deleteMany({
+      where: { id }
+    });
+
+    return deleted.count > 0;
   },
 
+  // ============================================
+  // PUBLISH GUIDE
+  // ============================================
   async publish(id) {
-    const [result] = await pool.query(
-      `
-      UPDATE guides
-      SET published = 1, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-      [id]
-    );
+    const updated = await prisma.guide.updateMany({
+      where: { id },
+      data: {
+        published: true,
+        updatedAt: new Date()
+      }
+    });
 
-    return result.affectedRows > 0;
-  },
+    return updated.count > 0;
+  }
 };
