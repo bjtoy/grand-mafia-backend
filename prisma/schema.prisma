@@ -13,7 +13,6 @@ model User {
   username  String
   createdAt DateTime @default(now())
 
-  // Relations
   logs GuildLog[]
 }
 
@@ -25,6 +24,22 @@ model GuildLog {
   details   String?
   createdAt DateTime @default(now())
 
-  // Relations
   user User @relation(fields: [userId], references: [id])
+}
+
+model Member {
+  id        String   @id @default(uuid())
+  discordId String   @unique
+  username  String
+  email     String?
+  avatar    String?
+  role      String?
+  joinedAt  DateTime?
+  lastSeen  DateTime?
+  notes     String?
+  warnings  Int       @default(0)
+  muted     Boolean   @default(false)
+  banned    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }

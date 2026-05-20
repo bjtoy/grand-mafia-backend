@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db');
+const prisma = require('../config/db');
 
-// Permission middleware
 const {
     requireAnyRole,
     requirePermission
@@ -10,22 +9,18 @@ const {
 
 // ============================================
 // PUBLIC / READ-ONLY ROUTES
-// Members are synced automatically by the
-// Role Sync Engine. Manual edits are restricted.
 // ============================================
 
 // GET ALL MEMBERS (public)
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query(`
-            SELECT *
-            FROM members
-            ORDER BY id DESC
-        `);
+        const members = await prisma.member.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
 
         res.json({
             success: true,
-            members: rows
+            members
         });
 
     } catch (error) {
@@ -37,12 +32,11 @@ router.get('/', async (req, res) => {
 // GET MEMBER BY ID (public)
 router.get('/:id', async (req, res) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM members WHERE id = ?',
-            [req.params.id]
-        );
+        const member = await prisma.member.findUnique({
+            where: { id: req.params.id }
+        });
 
-        if (rows.length === 0) {
+        if (!member) {
             return res.status(404).json({
                 success: false,
                 message: 'Member not found'
@@ -51,7 +45,7 @@ router.get('/:id', async (req, res) => {
 
         res.json({
             success: true,
-            member: rows[0]
+            member
         });
 
     } catch (error) {
@@ -61,12 +55,9 @@ router.get('/:id', async (req, res) => {
 });
 
 // ============================================
-// PROTECTED ROUTES (DISABLED IN SECTION D)
-// Member creation, updates, and deletion are
-// handled automatically by the Role Sync Engine.
+// PROTECTED ROUTES (DISABLED)
 // ============================================
 
-// CREATE MEMBER (DISABLED)
 router.post(
     '/',
     requireAnyRole(['Admin', 'Mod']),
@@ -74,12 +65,11 @@ router.post(
     (req, res) => {
         return res.status(403).json({
             success: false,
-            message: 'Members cannot be created manually. They are created automatically when they join the server or log in.'
+            message: 'Members cannot be created manually. They are created automatically.'
         });
     }
 );
 
-// UPDATE MEMBER (DISABLED)
 router.put(
     '/:id',
     requireAnyRole(['Admin', 'Mod']),
@@ -87,12 +77,11 @@ router.put(
     (req, res) => {
         return res.status(403).json({
             success: false,
-            message: 'Members cannot be updated manually. Their data is synced automatically from Discord.'
+            message: 'Members cannot be updated manually. They are synced automatically.'
         });
     }
 );
 
-// DELETE MEMBER (DISABLED)
 router.delete(
     '/:id',
     requireAnyRole(['Admin', 'Mod']),
@@ -100,7 +89,7 @@ router.delete(
     (req, res) => {
         return res.status(403).json({
             success: false,
-            message: 'Members cannot be deleted manually. They are managed automatically by the Role Sync Engine.'
+            message: 'Members cannot be deleted manually.'
         });
     }
 );
