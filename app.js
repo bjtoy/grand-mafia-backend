@@ -6,8 +6,8 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
-// DB
-const pool = require('./config/db');
+// Prisma (Postgres)
+const prisma = require('./config/db');
 
 // Auth + Permission middleware
 const {
@@ -43,12 +43,15 @@ app.use(limiter);
 
 app.get('/api/test', async (req, res) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT "Backend is connected!" AS message'
-        );
-        res.json({ success: true, message: rows[0].message });
+        // Postgres-safe test query
+        const result = await prisma.$queryRaw`SELECT 'Backend is connected!' AS message`;
+
+        res.json({
+            success: true,
+            message: result[0].message
+        });
     } catch (err) {
-        console.error(err);
+        console.error('Database error:', err);
         res.status(500).json({ success: false, error: 'Database error' });
     }
 });
