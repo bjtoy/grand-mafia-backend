@@ -61,4 +61,18 @@ model GuideVersion {
   guide Guide @relation(fields: [guideId], references: [id])
 }
 
-model Announcement
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
