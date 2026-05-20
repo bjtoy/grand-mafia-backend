@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db');
+const prisma = require('../config/db');
 
 // Internal roles + permissions
 const INTERNAL_ROLES = require('../config/roles');
@@ -20,11 +20,13 @@ const {
 // GET all roles (public)
 router.get('/', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM roles ORDER BY name ASC');
+        const roles = await prisma.role.findMany({
+            orderBy: { name: 'asc' }
+        });
 
         res.json({
             success: true,
-            roles: rows,
+            roles,
             internalRoles: INTERNAL_ROLES
         });
 
@@ -37,16 +39,17 @@ router.get('/', async (req, res) => {
 // GET role by ID (public)
 router.get('/:id', async (req, res) => {
     try {
-        const [rows] = await pool.query(
-            'SELECT * FROM roles WHERE id = ?',
-            [req.params.id]
-        );
+        const role = await prisma.role.findUnique({
+            where: { id: req.params.id }
+        });
 
-        if (rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Role not found' });
+        if (!role) {
+            return res.status(404).json({
+                success: false,
+                message: 'Role not found'
+            });
         }
 
-        const role = rows[0];
         const internal = INTERNAL_ROLES[role.name] || null;
 
         res.json({
