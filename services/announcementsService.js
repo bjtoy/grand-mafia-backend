@@ -1,60 +1,77 @@
-const pool = require("../config/db");
+const prisma = require("../config/db");
 
 module.exports = {
+  // ============================================
+  // GET ALL ANNOUNCEMENTS
+  // ============================================
   async getAll() {
-    const [rows] = await pool.query(
-      `SELECT * FROM announcements ORDER BY createdAt DESC`
-    );
-    return rows;
+    return await prisma.announcement.findMany({
+      orderBy: { createdAt: "desc" }
+    });
   },
 
+  // ============================================
+  // GET ANNOUNCEMENT BY ID
+  // ============================================
   async getById(id) {
-    const [rows] = await pool.query(
-      `SELECT * FROM announcements WHERE id = ?`,
-      [id]
-    );
-    return rows[0] || null;
+    return await prisma.announcement.findUnique({
+      where: { id }
+    });
   },
 
+  // ============================================
+  // CREATE ANNOUNCEMENT
+  // ============================================
   async create(title, content) {
-    const [result] = await pool.query(
-      `INSERT INTO announcements (title, content) VALUES (?, ?)`,
-      [title, content]
-    );
-    return result.insertId;
+    const announcement = await prisma.announcement.create({
+      data: {
+        title,
+        content
+      }
+    });
+
+    return announcement.id;
   },
 
+  // ============================================
+  // UPDATE ANNOUNCEMENT
+  // ============================================
   async update(id, title, content) {
-    const [result] = await pool.query(
-      `
-      UPDATE announcements
-      SET title = ?, content = ?, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-      [title, content, id]
-    );
+    const updated = await prisma.announcement.updateMany({
+      where: { id },
+      data: {
+        title,
+        content,
+        updatedAt: new Date()
+      }
+    });
 
-    return result.affectedRows > 0;
+    return updated.count > 0;
   },
 
+  // ============================================
+  // DELETE ANNOUNCEMENT
+  // ============================================
   async remove(id) {
-    const [result] = await pool.query(
-      `DELETE FROM announcements WHERE id = ?`,
-      [id]
-    );
-    return result.affectedRows > 0;
+    const deleted = await prisma.announcement.deleteMany({
+      where: { id }
+    });
+
+    return deleted.count > 0;
   },
 
+  // ============================================
+  // MARK AS POSTED
+  // ============================================
   async markPosted(id) {
-    const [result] = await pool.query(
-      `
-      UPDATE announcements
-      SET posted = 1, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-      [id]
-    );
+    const updated = await prisma.announcement.updateMany({
+      where: { id },
+      data: {
+        posted: true,
+        updatedAt: new Date()
+      }
+    });
 
-    return result.affectedRows > 0;
-  },
+    return updated.count > 0;
+  }
 };
