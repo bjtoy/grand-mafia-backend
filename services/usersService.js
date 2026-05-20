@@ -1,62 +1,74 @@
-const pool = require("../config/db");
+const prisma = require("../config/db");
 
 module.exports = {
   async getAll() {
-    const [rows] = await pool.query(
-      `
-      SELECT id, username, email, createdAt, updatedAt
-      FROM users
-      ORDER BY id DESC
-    `
-    );
-    return rows;
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        discordId: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    return users;
   },
 
   async getById(id) {
-    const [rows] = await pool.query(
-      `
-      SELECT id, username, email, createdAt, updatedAt
-      FROM users
-      WHERE id = ?
-    `,
-      [id]
-    );
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        username: true,
+        discordId: true,
+        createdAt: true
+      }
+    });
 
-    return rows[0] || null;
+    return user || null;
   },
 
   async create(username, email, passwordHash) {
-    const [result] = await pool.query(
-      `
-      INSERT INTO users (username, email, passwordHash)
-      VALUES (?, ?, ?)
-    `,
-      [username, email, passwordHash]
-    );
+    // Your schema does NOT have email or passwordHash.
+    // For now, we only save username + a generated discordId placeholder.
+    // Later we can expand the schema.
 
-    return result.insertId;
+    const newUser = await prisma.user.create({
+      data: {
+        username,
+        discordId: `placeholder_${Date.now()}`
+      }
+    });
+
+    return newUser.id;
   },
 
   async update(id, username, email, passwordHash) {
-    const [result] = await pool.query(
-      `
-      UPDATE users
-      SET username = ?, email = ?, passwordHash = ?, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-      [username, email, passwordHash, id]
-    );
+    // Again, schema does not support email/passwordHash yet.
+    // Only username can be updated.
 
-    return result.affectedRows > 0;
+    const updated = await prisma.user.update({
+      where: { id },
+      data: {
+        username
+      }
+    });
+
+    return !!updated;
   },
 
   async remove(id) {
-    const [result] = await pool.query(
-      `DELETE FROM users WHERE id = ?`,
-      [id]
-    );
-
-    return result.affectedRows > 0;
-  },
+    try {
+      await prisma.user.delete({
+        where: { id }
+      });
+      return true;
+    } catch (err) {
+      // If user doesn't exist, Prisma throws an error
+      return false;
+    }
+  }
 };
-
