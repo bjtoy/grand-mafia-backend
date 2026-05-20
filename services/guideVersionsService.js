@@ -1,56 +1,64 @@
-const pool = require("../config/db");
+const prisma = require("../config/db");
 
 module.exports = {
+  // ============================================
+  // GET ALL VERSIONS FOR A GUIDE
+  // ============================================
   async getAllForGuide(guideId) {
-    const [rows] = await pool.query(
-      `
-      SELECT *
-      FROM guide_versions
-      WHERE guideId = ?
-      ORDER BY createdAt DESC
-    `,
-      [guideId]
-    );
-    return rows;
+    return await prisma.guideVersion.findMany({
+      where: { guideId },
+      orderBy: { createdAt: "desc" }
+    });
   },
 
+  // ============================================
+  // GET VERSION BY ID
+  // ============================================
   async getById(id) {
-    const [rows] = await pool.query(
-      `SELECT * FROM guide_versions WHERE id = ?`,
-      [id]
-    );
-    return rows[0] || null;
+    return await prisma.guideVersion.findUnique({
+      where: { id }
+    });
   },
 
+  // ============================================
+  // CREATE VERSION
+  // ============================================
   async create(guideId, title, content) {
-    const [result] = await pool.query(
-      `
-      INSERT INTO guide_versions (guideId, title, content)
-      VALUES (?, ?, ?)
-    `,
-      [guideId, title, content]
-    );
-    return result.insertId;
+    const version = await prisma.guideVersion.create({
+      data: {
+        guideId,
+        title,
+        content
+      }
+    });
+
+    return version.id;
   },
 
+  // ============================================
+  // UPDATE VERSION
+  // ============================================
   async update(id, title, content) {
-    const [result] = await pool.query(
-      `
-      UPDATE guide_versions
-      SET title = ?, content = ?, updatedAt = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `,
-      [title, content, id]
-    );
+    const updated = await prisma.guideVersion.updateMany({
+      where: { id },
+      data: {
+        title,
+        content,
+        updatedAt: new Date()
+      }
+    });
 
-    return result.affectedRows > 0;
+    return updated.count > 0;
   },
 
+  // ============================================
+  // DELETE VERSION
+  // ============================================
   async remove(id) {
-    const [result] = await pool.query(
-      `DELETE FROM guide_versions WHERE id = ?`,
-      [id]
-    );
-    return result.affectedRows > 0;
-  },
+    const deleted = await prisma.guideVersion.deleteMany({
+      where: { id }
+    });
+
+    return deleted.count > 0;
+  }
 };
