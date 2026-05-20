@@ -8,10 +8,10 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  discordId String   @unique
+  id        String    @id @default(uuid())
+  discordId String    @unique
   username  String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   logs GuildLog[]
 }
@@ -28,8 +28,8 @@ model GuildLog {
 }
 
 model Member {
-  id        String   @id @default(uuid())
-  discordId String   @unique
+  id        String        @id @default(uuid())
+  discordId String        @unique
   username  String
   email     String?
   avatar    String?
@@ -37,9 +37,51 @@ model Member {
   joinedAt  DateTime?
   lastSeen  DateTime?
   notes     String?
-  warnings  Int       @default(0)
-  muted     Boolean   @default(false)
-  banned    Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  warnings  Int           @default(0)
+  muted     Boolean       @default(false)
+  banned    Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  roles     MemberRole[]
+  logs      ModerationLog[]
+}
+
+model Role {
+  id            String        @id @default(uuid())
+  name          String        @unique
+  discordRoleId String?
+  color         String?
+  permissions   String?
+  memberCount   Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  members       MemberRole[]
+}
+
+model MemberRole {
+  id         String   @id @default(uuid())
+  memberId   String
+  roleId     String
+  assignedAt DateTime @default(now())
+  assignedBy String?
+
+  member Member @relation(fields: [memberId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
+}
+
+model ModerationLog {
+  id           String   @id @default(uuid())
+  action       String
+  targetUser   String?
+  targetUserId String?
+  moderator    String?
+  moderatorId  String?
+  reason       String?
+  duration     Int?
+  createdAt    DateTime @default(now())
+
+  memberId     String?
+  member       Member?  @relation(fields: [memberId], references: [id])
 }

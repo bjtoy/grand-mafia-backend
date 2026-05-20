@@ -1,111 +1,122 @@
-const pool = require("../config/db");
+const prisma = require("../config/db");
 
-// Internal role hierarchy
 const ROLE_ORDER = ["Member", "Scout", "Enforcer", "Moderator", "Admin"];
 
 module.exports = {
+  // ============================================
+  // WARN
+  // ============================================
   async warn(memberId, reason) {
-    await pool.query(
-      `
-      INSERT INTO moderation_logs (memberId, action, reason)
-      VALUES (?, 'WARN', ?)
-    `,
-      [memberId, reason]
-    );
+    await prisma.moderationLog.create({
+      data: {
+        action: "WARN",
+        reason,
+        member: { connect: { id: memberId } }
+      }
+    });
   },
 
+  // ============================================
+  // DELETE MESSAGE
+  // ============================================
   async deleteMessage(messageId, channelId, reason) {
-    await pool.query(
-      `
-      INSERT INTO moderation_logs (action, messageId, channelId, reason)
-      VALUES ('DELETE_MESSAGE', ?, ?, ?)
-    `,
-      [messageId, channelId, reason || null]
-    );
+    await prisma.moderationLog.create({
+      data: {
+        action: "DELETE_MESSAGE",
+        reason: reason || null,
+        targetUser: null,
+        targetUserId: null,
+        duration: null,
+        memberId: null,
+        messageId,
+        channelId
+      }
+    });
   },
 
+  // ============================================
+  // PROMOTE
+  // ============================================
   async promote(memberId) {
-    const [rows] = await pool.query(
-      `
-      SELECT r.name AS roleName, r.id AS roleId
-      FROM member_roles mr
-      JOIN roles r ON r.id = mr.roleId
-      WHERE mr.memberId = ?
-    `,
-      [memberId]
-    );
+    const current = await prisma.memberRole.findFirst({
+      where: { memberId },
+      include: { role: true }
+    });
 
-    if (rows.length === 0) {
+    if (!current) {
       return { success: false, message: "Member has no role assigned" };
     }
 
-    const currentRole = rows[0].roleName;
-    const currentIndex = ROLE_ORDER.indexOf(currentRole);
+    const currentIndex = ROLE_ORDER.indexOf(current.role.name);
 
     if (currentIndex === ROLE_ORDER.length - 1) {
       return { success: false, message: "Member is already at highest rank" };
     }
 
-    const newRole = ROLE_ORDER[currentIndex + 1];
+    const newRoleName = ROLE_ORDER[currentIndex + 1];
 
-    // Update DB
-    await pool.query(
-      `
-      UPDATE member_roles
-      SET roleId = (SELECT id FROM roles WHERE name = ?)
-      WHERE memberId = ?
-    `,
-      [newRole, memberId]
-    );
+    const newRole = await prisma.role.findUnique({
+      where: { name: newRoleName }
+    });
 
-    return { success: true, message: `Promoted to ${newRole}` };
+    if (!newRole) {
+      return { success: false, message: "Target role does not exist" };
+    }
+
+    await prisma.memberRole.update({
+      where: { id: current.id },
+      data: { roleId: newRole.id }
+    });
+
+    return { success: true, message: `Promoted to ${newRoleName}` };
   },
 
+  // ============================================
+  // DEMOTE
+  // ============================================
   async demote(memberId) {
-    const [rows] = await pool.query(
-      `
-      SELECT r.name AS roleName, r.id AS roleId
-      FROM member_roles mr
-      JOIN roles r ON r.id = mr.roleId
-      WHERE mr.memberId = ?
-    `,
-      [memberId]
-    );
+    const current = await prisma.memberRole.findFirst({
+      where: { memberId },
+      include: { role: true }
+    });
 
-    if (rows.length === 0) {
+    if (!current) {
       return { success: false, message: "Member has no role assigned" };
     }
 
-    const currentRole = rows[0].roleName;
-    const currentIndex = ROLE_ORDER.indexOf(currentRole);
+    const currentIndex = ROLE_ORDER.indexOf(current.role.name);
 
     if (currentIndex === 0) {
       return { success: false, message: "Member is already at lowest rank" };
     }
 
-    const newRole = ROLE_ORDER[currentIndex - 1];
+    const newRoleName = ROLE_ORDER[currentIndex - 1];
 
-    // Update DB
-    await pool.query(
-      `
-      UPDATE member_roles
-      SET roleId = (SELECT id FROM roles WHERE name = ?)
-      WHERE memberId = ?
-    `,
-      [newRole, memberId]
-    );
+    const newRole = await prisma.role.findUnique({
+      where: { name: newRoleName }
+    });
 
-    return { success: true, message: `Demoted to ${newRole}` };
+    if (!newRole) {
+      return { success: false, message: "Target role does not exist" };
+    }
+
+    await prisma.memberRole.update({
+      where: { id: current.id },
+      data: { roleId: newRole.id }
+    });
+
+    return { success: true, message: `Demoted to ${newRoleName}` };
   },
 
+  // ============================================
+  // GET LOGS
+  // ============================================
   async getLogs() {
-    const [rows] = await pool.query(
-      `
-      SELECT *
-      FROM moderation_logs
-      ORDER BY createdAt DESC
-    `
-    );
-    return rows;
-  },
+    return await prisma.moderationLog.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        member: true
+      }
+    });
+  }
 };
