@@ -1,8 +1,3 @@
-// ============================================
-// DISCORD BOT (Backend‑Integrated Version)
-// CommonJS • MySQL • RoleSync Engine
-// ============================================
-
 require('dotenv').config();
 
 const {
@@ -16,6 +11,9 @@ const {
 
 const { syncMemberRoles, syncAllMembers } = require('../roleSync');
 const pool = require('../config/db');
+
+const fs = require('fs');
+const path = require('path');
 
 // ============================================
 // DISCORD CLIENT
@@ -31,15 +29,11 @@ const client = new Client({
     partials: [Partials.Channel]
 });
 
-// Command + Event Collections
 client.commands = new Collection();
 
 // ============================================
 // LOAD COMMANDS
 // ============================================
-
-const fs = require('fs');
-const path = require('path');
 
 function loadCommands() {
     const commandsPath = path.join(__dirname, 'commands');
@@ -76,8 +70,8 @@ async function registerSlashCommands() {
 
         await rest.put(
             Routes.applicationGuildCommands(
-                process.env.CLIENT_ID,
-                process.env.GUILD_ID
+                process.env.DISCORD_CLIENT_ID,
+                process.env.DISCORD_GUILD_ID
             ),
             { body: slashCommands }
         );
@@ -114,13 +108,12 @@ function loadEvents() {
 client.once('ready', async () => {
     console.log(`🤖 Bot logged in as ${client.user.tag}`);
 
-    const guild = client.guilds.cache.get(process.env.GUILD_ID);
+    const guild = client.guilds.cache.get(process.env.DISCORD_GUILD_ID);
     if (!guild) {
-        console.error('❌ Guild not found. Check GUILD_ID.');
+        console.error('❌ Guild not found. Check DISCORD_GUILD_ID.');
         return;
     }
 
-    // Full startup sync
     const members = await guild.members.fetch();
     await syncAllMembers(members);
 
