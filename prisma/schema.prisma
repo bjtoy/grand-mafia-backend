@@ -22,7 +22,7 @@ model Member {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roles     MemberRole[]
+  roles MemberRole[]
 }
 
 model Role {
@@ -31,25 +31,25 @@ model Role {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members   MemberRole[]
+  members MemberRole[]
 }
 
 model MemberRole {
-  id        String   @id @default(uuid())
-  memberId  String
-  roleId    String
+  id       String @id @default(uuid())
+  memberId String
+  roleId   String
 
   member Member @relation(fields: [memberId], references: [id])
   role   Role   @relation(fields: [roleId], references: [id])
 }
 
 model Guide {
-  id          String         @id @default(uuid())
-  title       String
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id        String   @id @default(uuid())
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  versions    GuideVersion[]
+  versions GuideVersion[]
 }
 
 model GuideVersion {
