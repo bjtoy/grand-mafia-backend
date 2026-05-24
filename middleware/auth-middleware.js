@@ -14,7 +14,7 @@ const INTERNAL_ROLES = require('../config/roles');
 const {
     syncMemberRoles,
     mapDiscordRolesToInternal
-} = require('../roleSync');
+} = require('../services/roleSync.js');
 
 // ============================================
 // AUTH MIDDLEWARE (DISCORD + INTERNAL ROLES)
