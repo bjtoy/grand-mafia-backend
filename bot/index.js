@@ -4,13 +4,8 @@ const {
     Client,
     GatewayIntentBits,
     Partials,
-    Collection,
-    REST,
-    Routes
+    Collection
 } = require('discord.js');
-
-const { syncMemberRoles, syncAllMembers } = require('../services/roleSync.js');
-const pool = require('../config/db');
 
 const fs = require('fs');
 const path = require('path');
@@ -39,8 +34,6 @@ function loadCommands() {
     const commandsPath = path.join(__dirname, 'commands');
     const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith('.js'));
 
-    const slashCommands = [];
-
     for (const file of commandFiles) {
         const command = require(`./commands/${file}`);
 
@@ -50,35 +43,6 @@ function loadCommands() {
         }
 
         client.commands.set(command.data.name, command);
-        slashCommands.push(command.data.toJSON());
-    }
-
-    return slashCommands;
-}
-
-// ============================================
-// REGISTER SLASH COMMANDS
-// ============================================
-
-async function registerSlashCommands() {
-    const slashCommands = loadCommands();
-
-    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-
-    try {
-        console.log('🔄 Registering slash commands...');
-
-        await rest.put(
-            Routes.applicationGuildCommands(
-                process.env.DISCORD_CLIENT_ID,
-                process.env.DISCORD_GUILD_ID
-            ),
-            { body: slashCommands }
-        );
-
-        console.log('✔ Slash commands registered');
-    } catch (error) {
-        console.error('❌ Failed to register slash commands:', error);
     }
 }
 
@@ -105,30 +69,8 @@ function loadEvents() {
 // BOT READY EVENT
 // ============================================
 
-client.once('ready', async () => {
+client.once('ready', () => {
     console.log(`🤖 Bot logged in as ${client.user.tag}`);
-
-    const guild = client.guilds.cache.get(process.env.DISCORD_GUILD_ID);
-    if (!guild) {
-        console.error('❌ Guild not found. Check DISCORD_GUILD_ID.');
-        return;
-    }
-
-    const members = await guild.members.fetch();
-    await syncAllMembers(members);
-
-    console.log('✔ Full member sync completed');
-});
-
-// ============================================
-// MEMBER UPDATE EVENT
-// ============================================
-
-client.on('guildMemberUpdate', async (oldMember, newMember) => {
-    const discordId = newMember.id;
-    const roleIds = newMember.roles.cache.map(r => r.id);
-
-    await syncMemberRoles(discordId, roleIds);
 });
 
 // ============================================
@@ -142,7 +84,7 @@ client.on('interactionCreate', async interaction => {
     if (!command) return;
 
     try {
-        await command.execute(interaction, pool);
+        await command.execute(interaction);
     } catch (error) {
         console.error(error);
         await interaction.reply({
@@ -157,8 +99,8 @@ client.on('interactionCreate', async interaction => {
 // ============================================
 
 async function startBot() {
+    loadCommands();
     loadEvents();
-    await registerSlashCommands();
     await client.login(process.env.DISCORD_TOKEN);
 }
 

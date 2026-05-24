@@ -1,12 +1,14 @@
 const { EmbedBuilder } = require('discord.js');
-const translate = require('@vitalets/google-translate-api');
+const translate = require('@iamtraction/google-translate');
 
 module.exports = {
     name: 'interactionCreate',
 
     async execute(client, interaction) {
         try {
-            // BUTTONS
+            // ============================================
+            // BUTTON HANDLER (TRANSLATION)
+            // ============================================
             if (interaction.isButton()) {
                 if (!interaction.customId.startsWith('translate_')) return;
 
@@ -40,8 +42,8 @@ module.exports = {
                     .setColor('#4CC9FF')
                     .setTitle(`🌐 Translated (${lang.toUpperCase()})`)
                     .addFields(
-                        { name: 'Original', value: originalMessage.content },
-                        { name: 'Translation', value: translated.text }
+                        { name: 'Original', value: originalMessage.content || '*(no text)*' },
+                        { name: 'Translation', value: translated.text || '*(no translation)*' }
                     )
                     .setFooter({ text: 'Powered by Google Translate (Unofficial API)' })
                     .setTimestamp();
@@ -52,7 +54,9 @@ module.exports = {
                 });
             }
 
-            // SLASH COMMANDS
+            // ============================================
+            // SLASH COMMAND HANDLER
+            // ============================================
             if (interaction.isChatInputCommand()) {
                 const command = client.commands.get(interaction.commandName);
                 if (!command) return;

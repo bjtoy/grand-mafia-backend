@@ -1,8 +1,5 @@
 // ============================================
-// ROLE SYNC ENGINE (SECTION D)
-// Prisma-powered rewrite
-// Maps Discord roles → Internal roles
-// Syncs member + member_roles tables
+// ROLE SYNC ENGINE (BACKEND ONLY)
 // ============================================
 
 const prisma = require('../config/db');
@@ -33,7 +30,6 @@ function mapDiscordRolesToInternal(discordRoleIds = []) {
         }
     }
 
-    // Always guarantee Member at minimum
     if (!internalRoles.includes('Member')) {
         internalRoles.push('Member');
     }
@@ -69,13 +65,10 @@ async function ensureRolesExist() {
 
 async function syncMemberRoles(discordId, discordRoleIds = []) {
     try {
-        // Ensure roles table is correct
         await ensureRolesExist();
 
-        // Map Discord → Internal
         const internalRoles = mapDiscordRolesToInternal(discordRoleIds);
 
-        // Ensure member exists
         let member = await prisma.member.findUnique({
             where: { discordId }
         });
@@ -89,12 +82,10 @@ async function syncMemberRoles(discordId, discordRoleIds = []) {
             });
         }
 
-        // Clear old roles
         await prisma.memberRole.deleteMany({
             where: { memberId: member.id }
         });
 
-        // Insert new roles
         for (const roleName of internalRoles) {
             const role = await prisma.role.findUnique({
                 where: { name: roleName }
@@ -120,7 +111,7 @@ async function syncMemberRoles(discordId, discordRoleIds = []) {
 }
 
 // ============================================
-// 4. Sync ALL members (used on bot startup)
+// 4. Sync ALL members (backend-triggered only)
 // ============================================
 
 async function syncAllMembers(discordMembers) {
