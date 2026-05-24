@@ -5,8 +5,8 @@
 // Syncs member + member_roles tables
 // ============================================
 
-const prisma = require('./config/db');
-const INTERNAL_ROLES = require('./config/roles');
+const prisma = require('../config/db');
+const INTERNAL_ROLES = require('../config/roles');
 
 // ============================================
 // DISCORD → INTERNAL ROLE MAP
