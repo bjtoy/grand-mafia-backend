@@ -43,7 +43,6 @@ app.use(limiter);
 
 app.get('/api/test', async (req, res) => {
     try {
-        // Postgres-safe test query
         const result = await prisma.$queryRaw`SELECT 'Backend is connected!' AS message`;
 
         res.json({
@@ -60,7 +59,6 @@ app.get('/api/test', async (req, res) => {
 // PROTECTED ROUTES (AUTH REQUIRED)
 // ============================================
 
-// Attach auth middleware BEFORE protected routes
 app.use(authMiddleware);
 
 // USERS (Admin only)
