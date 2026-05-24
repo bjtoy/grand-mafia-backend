@@ -6,7 +6,10 @@
     "start": "node bot/index.js"
   },
   "dependencies": {
+    "@iamtraction/google-translate": "^2.0.1",
+    "@vitalets/google-translate-api": "^9.2.1",
     "axios": "^1.6.7",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
