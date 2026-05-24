@@ -9,7 +9,7 @@ const {
     PermissionFlagsBits
 } = require('discord.js');
 
-const { mapDiscordRolesToInternal } = require('../../roleSync');
+const { mapDiscordRolesToInternal } = require('../../services/roleSync.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -31,7 +31,7 @@ module.exports = {
 
     cooldown: 2,
 
-    async execute(interaction, pool) {
+    async execute(interaction) {
         try {
             // ============================================
             // INTERNAL PERMISSION CHECK
@@ -85,14 +85,6 @@ module.exports = {
                 .setTimestamp();
 
             await interaction.reply({ embeds: [warnEmbed] });
-
-            // ============================================
-            // (OPTIONAL) LOG TO DATABASE — G‑TASK LATER
-            // ============================================
-            // await pool.query(
-            //     'INSERT INTO mod_logs (action, userId, moderatorId, reason) VALUES (?, ?, ?, ?)',
-            //     ['WARN', user.id, interaction.user.id, reason]
-            // );
 
         } catch (error) {
             console.error('❌ Warn error:', error);
