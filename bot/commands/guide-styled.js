@@ -16,9 +16,9 @@ const {
     important,
     buildGuideContent,
     createGuideEmbed
-} = require('../utils/guideStyles');
+} = require('../utils/guideStyles.js');
 
-const { mapDiscordRolesToInternal } = require('../../roleSync');
+const { mapDiscordRolesToInternal } = require('../../services/roleSync.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -38,7 +38,7 @@ module.exports = {
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-    async execute(interaction, pool) {
+    async execute(interaction) {
         try {
             // ============================================
             // INTERNAL PERMISSION CHECK
