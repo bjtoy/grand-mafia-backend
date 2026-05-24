@@ -2,8 +2,8 @@
 // guildMemberUpdate — Sync Discord Roles to Database
 // ============================================
 
-const { syncMemberRoles } = require('../../services/roleSync');
-const prisma = require('../../prisma/client');
+const { syncMemberRoles } = require('../services/roleSync.js');
+const prisma = require('../prisma/client');
 
 module.exports = {
     name: 'guildMemberUpdate',
@@ -11,8 +11,10 @@ module.exports = {
     async execute(oldMember, newMember) {
         try {
             // Ignore if roles didn't change
-            if (oldMember.roles.cache.size === newMember.roles.cache.size &&
-                oldMember.roles.cache.every(r => newMember.roles.cache.has(r.id))) {
+            if (
+                oldMember.roles.cache.size === newMember.roles.cache.size &&
+                oldMember.roles.cache.every(r => newMember.roles.cache.has(r.id))
+            ) {
                 return;
             }
 
