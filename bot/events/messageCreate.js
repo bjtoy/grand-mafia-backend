@@ -11,7 +11,7 @@ const {
 module.exports = {
     name: 'messageCreate',
 
-    async execute(message) {
+    async execute(client, message) {
         try {
             // Ignore bot messages
             if (message.author.bot) return;

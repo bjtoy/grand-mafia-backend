@@ -1,7 +1,3 @@
-// ============================================
-// interactionCreate — Handles Buttons + Commands
-// ============================================
-
 const { EmbedBuilder } = require('discord.js');
 const translate = require('@vitalets/google-translate-api');
 
@@ -10,15 +6,12 @@ module.exports = {
 
     async execute(client, interaction) {
         try {
-            // ============================================
-            // BUTTON INTERACTIONS
-            // ============================================
+            // BUTTONS
             if (interaction.isButton()) {
                 if (!interaction.customId.startsWith('translate_')) return;
 
                 const messageId = interaction.customId.split('_')[1];
 
-                // Fetch original message
                 const originalMessage = await interaction.channel.messages
                     .fetch(messageId)
                     .catch(() => null);
@@ -26,27 +19,23 @@ module.exports = {
                 if (!originalMessage) {
                     return interaction.reply({
                         content: '❌ Could not find the original message.',
-                        flags: 64 // ephemeral
+                        flags: 64
                     });
                 }
 
-                // Determine target language
                 const lang = interaction.locale?.split('-')[0] || 'en';
 
-                // Perform translation
                 let translated;
                 try {
                     translated = await translate(originalMessage.content, { to: lang });
                 } catch (err) {
                     console.error('❌ Translation error:', err);
-
                     return interaction.reply({
                         content: `❌ Could not translate this message to **${lang}**.`,
                         flags: 64
                     });
                 }
 
-                // Build translation embed
                 const embed = new EmbedBuilder()
                     .setColor('#4CC9FF')
                     .setTitle(`🌐 Translated (${lang.toUpperCase()})`)
@@ -63,9 +52,7 @@ module.exports = {
                 });
             }
 
-            // ============================================
             // SLASH COMMANDS
-            // ============================================
             if (interaction.isChatInputCommand()) {
                 const command = client.commands.get(interaction.commandName);
                 if (!command) return;
