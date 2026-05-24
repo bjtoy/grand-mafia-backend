@@ -8,7 +8,7 @@ const translate = require('@vitalets/google-translate-api');
 module.exports = {
     name: 'interactionCreate',
 
-    async execute(interaction, client, pool) {
+    async execute(client, interaction) {
         try {
             // ============================================
             // BUTTON INTERACTIONS
@@ -26,7 +26,7 @@ module.exports = {
                 if (!originalMessage) {
                     return interaction.reply({
                         content: '❌ Could not find the original message.',
-                        ephemeral: true
+                        flags: 64 // ephemeral
                     });
                 }
 
@@ -42,7 +42,7 @@ module.exports = {
 
                     return interaction.reply({
                         content: `❌ Could not translate this message to **${lang}**.`,
-                        ephemeral: true
+                        flags: 64
                     });
                 }
 
@@ -59,19 +59,30 @@ module.exports = {
 
                 return interaction.reply({
                     embeds: [embed],
-                    ephemeral: true
+                    flags: 64
                 });
             }
 
             // ============================================
             // SLASH COMMANDS
             // ============================================
-            if (!interaction.isChatInputCommand()) return;
+            if (interaction.isChatInputCommand()) {
+                const command = client.commands.get(interaction.commandName);
+                if (!command) return;
 
-            const command = client.commands.get(interaction.commandName);
-            if (!command) return;
+                try {
+                    await command.execute(interaction);
+                } catch (err) {
+                    console.error('❌ Command execution error:', err);
 
-            await command.execute(interaction, pool);
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({
+                            content: '❌ An unexpected error occurred.',
+                            flags: 64
+                        });
+                    }
+                }
+            }
 
         } catch (error) {
             console.error('❌ interactionCreate error:', error);
@@ -79,7 +90,7 @@ module.exports = {
             if (!interaction.replied && !interaction.deferred) {
                 return interaction.reply({
                     content: '❌ An unexpected error occurred.',
-                    ephemeral: true
+                    flags: 64
                 });
             }
         }
