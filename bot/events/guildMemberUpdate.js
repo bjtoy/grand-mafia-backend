@@ -2,7 +2,7 @@
 // guildMemberUpdate — Sync Discord Roles to Database
 // ============================================
 
-const { syncMemberRoles } = require('../services/roleSync.js');
+const { syncMemberRoles } = require('../../services/roleSync.js');
 const prisma = require('../prisma/client');
 
 module.exports = {
