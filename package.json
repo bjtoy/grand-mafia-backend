@@ -2,11 +2,11 @@
   "name": "grand-mafia-backend",
   "version": "1.0.0",
   "description": "Backend server + Discord bot for The Grand Mafia dashboard",
-  "main": "src/index.js",
-  "type": "commonjs",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+  "main": "index.js",
+"scripts": {
+  "start": "node index.js",
+  "dev": "nodemon index.js"
+}
   },
   "dependencies": {
     "@iamtraction/google-translate": "^2.0.1",
