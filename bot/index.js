@@ -9,7 +9,7 @@ const {
     Routes
 } = require('discord.js');
 
-const { syncMemberRoles, syncAllMembers } = require('../roleSync');
+const { syncMemberRoles, syncAllMembers } = require('../services/roleSync.js');
 const pool = require('../config/db');
 
 const fs = require('fs');
