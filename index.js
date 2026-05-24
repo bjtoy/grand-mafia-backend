@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const app = require('./app');
-const { ensureRolesExist } = require('./roleSync');
+const { ensureRolesExist } = require('./services/roleSync.js');
 const bot = require('./bot'); // <-- IMPORTANT: bot is now loaded
 
 const PORT = process.env.PORT || 3001;
