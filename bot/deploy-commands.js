@@ -1,14 +1,12 @@
-import { REST, Routes } from 'discord.js';
-import { readdirSync } from 'fs';
-import { join } from 'path';
-import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+const { REST, Routes } = require('discord.js');
+const { readdirSync } = require('fs');
+const { join } = require('path');
+const dotenv = require('dotenv');
+const path = require('path');
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = __dirname || path.dirname(require.main.filename);
 
 const commands = [];
 const commandsPath = join(__dirname, 'commands');
@@ -16,21 +14,23 @@ const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js
 
 for (const file of commandFiles) {
   const filePath = join(commandsPath, file);
-  const command = await import(`file://${filePath}`);
-  commands.push(command.default.data.toJSON());
+  const command = require(filePath);
+  commands.push(command.data.toJSON());
 }
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-try {
-  console.log('🔄 Refreshing slash commands...');
+(async () => {
+  try {
+    console.log('🔄 Refreshing GLOBAL slash commands...');
 
-  await rest.put(
-    Routes.applicationCommands(process.env.CLIENT_ID),
-    { body: commands }
-  );
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: commands }
+    );
 
-  console.log('✅ Slash commands registered successfully!');
-} catch (error) {
-  console.error(error);
-}
+    console.log('✅ GLOBAL slash commands registered successfully!');
+  } catch (error) {
+    console.error(error);
+  }
+})();
