@@ -3,7 +3,7 @@
 // ============================================
 
 const { syncMemberRoles } = require('../../services/roleSync.js');
-const prisma = require('../prisma/client');
+const prisma = require('../../prisma/client');
 
 module.exports = {
     name: 'guildMemberUpdate',
