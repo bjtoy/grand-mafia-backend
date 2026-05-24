@@ -14,6 +14,9 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            // Defer immediately to avoid "Unknown interaction"
+            await interaction.deferReply({ flags: 64 }); // ephemeral
+
             const helpEmbed = new EmbedBuilder()
                 .setColor('#0099ff')
                 .setTitle('📚 Grand Mafia Bot — Command Help')
@@ -63,15 +66,19 @@ module.exports = {
                 .setFooter({ text: 'Grand Mafia Faction Server' })
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [helpEmbed] });
+            // Edit the deferred reply
+            await interaction.editReply({ embeds: [helpEmbed] });
 
         } catch (error) {
             console.error('❌ Help command error:', error);
 
-            return interaction.reply({
-                content: '❌ Unexpected error while generating help menu.',
-                ephemeral: true
-            });
+            // Only reply if not already replied/deferred
+            if (!interaction.replied && !interaction.deferred) {
+                return interaction.reply({
+                    content: '❌ Unexpected error while generating help menu.',
+                    flags: 64
+                });
+            }
         }
     }
 };
