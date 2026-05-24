@@ -9,7 +9,7 @@ const {
     PermissionFlagsBits
 } = require('discord.js');
 
-const { mapDiscordRolesToInternal } = require('../../roleSync');
+const { mapDiscordRolesToInternal } = require('../../services/roleSync.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -37,7 +37,7 @@ module.exports = {
 
     cooldown: 3,
 
-    async execute(interaction, pool) {
+    async execute(interaction) {
         try {
             // ============================================
             // INTERNAL PERMISSION CHECK
@@ -56,7 +56,7 @@ module.exports = {
             // GET OPTIONS
             // ============================================
             const user = interaction.options.getUser('user');
-            const duration = interaction.options.getInteger('duration') || 300; // default 5 minutes
+            const duration = interaction.options.getInteger('duration') || 300;
             const reason = interaction.options.getString('reason') || 'No reason provided';
 
             const member = await interaction.guild.members.fetch(user.id).catch(() => null);
@@ -88,14 +88,6 @@ module.exports = {
                 .setTimestamp();
 
             await interaction.reply({ embeds: [muteEmbed] });
-
-            // ============================================
-            // (OPTIONAL) LOG TO DATABASE — G‑TASK LATER
-            // ============================================
-            // await pool.query(
-            //     'INSERT INTO mod_logs (action, userId, moderatorId, reason, duration) VALUES (?, ?, ?, ?, ?)',
-            //     ['MUTE', user.id, interaction.user.id, reason, duration]
-            // );
 
         } catch (error) {
             console.error('❌ Mute error:', error);
