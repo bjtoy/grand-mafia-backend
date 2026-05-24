@@ -9,7 +9,7 @@ const {
     PermissionFlagsBits
 } = require('discord.js');
 
-const { mapDiscordRolesToInternal } = require('../../roleSync');
+const { mapDiscordRolesToInternal } = require('../../services/roleSync.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -77,7 +77,7 @@ module.exports = {
 
     cooldown: 3,
 
-    async execute(interaction, pool) {
+    async execute(interaction) {
         try {
             // ============================================
             // INTERNAL PERMISSION CHECK
@@ -101,12 +101,6 @@ module.exports = {
                 const title = interaction.options.getString('title');
                 const category = interaction.options.getString('category');
                 const content = interaction.options.getString('content').replace(/\\n/g, '\n');
-
-                // (G‑TASK) Save to DB later
-                // await pool.query(
-                //     'INSERT INTO guides (title, category, content, authorId) VALUES (?, ?, ?, ?)',
-                //     [title, category, content, interaction.user.id]
-                // );
 
                 const confirmEmbed = new EmbedBuilder()
                     .setColor('#00ff00')
@@ -136,7 +130,6 @@ module.exports = {
                     });
                 }
 
-                // (G‑TASK) Fetch real guide content from DB later
                 const placeholderContent = 'Guide content will be displayed here.';
 
                 const guideEmbed = new EmbedBuilder()
