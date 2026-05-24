@@ -9,7 +9,7 @@ const {
     PermissionFlagsBits
 } = require('discord.js');
 
-const { mapDiscordRolesToInternal } = require('../../roleSync');
+const { mapDiscordRolesToInternal } = require('../../services/roleSync.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -81,7 +81,7 @@ module.exports = {
 
     cooldown: 3,
 
-    async execute(interaction, pool) {
+    async execute(interaction) {
         try {
             // ============================================
             // INTERNAL PERMISSION CHECK
