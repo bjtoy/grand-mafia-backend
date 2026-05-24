@@ -3,7 +3,6 @@
 // ============================================
 
 const { syncMemberRoles } = require('../../services/roleSync.js');
-const prisma = require('../../prisma/client');
 
 module.exports = {
     name: 'guildMemberUpdate',
@@ -21,7 +20,6 @@ module.exports = {
             const discordRoles = newMember.roles.cache.map(r => r.id);
 
             await syncMemberRoles(
-                prisma,
                 newMember.id,
                 discordRoles
             );
