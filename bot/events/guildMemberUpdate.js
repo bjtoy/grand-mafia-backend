@@ -7,7 +7,7 @@ const { syncMemberRoles } = require('../../services/roleSync.js');
 module.exports = {
     name: 'guildMemberUpdate',
 
-    async execute(oldMember, newMember) {
+    async execute(client, oldMember, newMember) {
         try {
             // Ignore if roles didn't change
             if (
