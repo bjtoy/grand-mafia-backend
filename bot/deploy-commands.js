@@ -3,7 +3,8 @@ const { readdirSync } = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
-dotenv.config();
+// Load .env from project root (one directory above /bot)
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const commands = [];
 const commandsPath = path.join(__dirname, 'commands');
@@ -13,13 +14,9 @@ for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
     const command = require(filePath);
 
-    // Support both CommonJS and ES module default exports
     const cmd = command.data || command.default?.data;
 
-    if (!cmd) {
-        console.error(`❌ Command file ${file} is missing "data"`);
-        continue;
-    }
+    if (!cmd) continue;
 
     commands.push(cmd.toJSON());
 }
