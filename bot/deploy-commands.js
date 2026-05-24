@@ -1,3 +1,4 @@
+console.log("Loaded CLIENT_ID:", process.env.CLIENT_ID);
 const { REST, Routes } = require('discord.js');
 const { readdirSync } = require('fs');
 const path = require('path');
