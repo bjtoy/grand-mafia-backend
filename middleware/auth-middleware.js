@@ -1,23 +1,23 @@
 // ============================================
 // AUTHENTICATION & PERMISSION MIDDLEWARE
-// REWRITTEN FOR ROLE SYNC ENGINE (SECTION D)
+// BACKEND-ONLY VERSION (NO DISCORD CLIENT REQUIRED)
 // ============================================
 
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
-const pool = require('../config/db');
+const prisma = require('../config/db');
 
 // Internal roles + permissions
 const INTERNAL_ROLES = require('../config/roles');
 
-// Role Sync Engine
+// Role Sync Engine (backend only)
 const {
     syncMemberRoles,
     mapDiscordRolesToInternal
 } = require('../services/roleSync.js');
 
 // ============================================
-// AUTH MIDDLEWARE (DISCORD + INTERNAL ROLES)
+// AUTH MIDDLEWARE (JWT + INTERNAL ROLES)
 // ============================================
 
 async function authMiddleware(req, res, next) {
@@ -91,18 +91,15 @@ async function authMiddleware(req, res, next) {
         }
 
         // --------------------------------------------
-        // 5) LOAD MEMBER FROM DB
+        // 5) LOAD MEMBER FROM DB (Prisma)
         // --------------------------------------------
-        const [members] = await pool.query(
-            'SELECT * FROM members WHERE discordId = ?',
-            [discordId]
-        );
+        const member = await prisma.member.findUnique({
+            where: { discordId }
+        });
 
-        if (members.length === 0) {
+        if (!member) {
             return res.status(403).json({ error: 'User not registered in members table' });
         }
-
-        const member = members[0];
 
         // --------------------------------------------
         // 6) ATTACH USER TO REQUEST
